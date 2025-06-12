@@ -19,6 +19,7 @@ from sklearn.metrics import classification_report, accuracy_score
 import tkinter as tk
 from tkinter import messagebox
 from matplotlib.lines import Line2D
+from sklearn.pipeline import make_pipeline
 
 def select_dataset():
     def set_choice(choice):
@@ -68,7 +69,8 @@ if 'Nr' in df.columns:
 label_mapping = {'light': 0, 'medium': 1, 'heavy': 2}
 reverse_label_mapping = {v: k for k, v in label_mapping.items()}
 df['Typ'] = df['Typ'].map(label_mapping)
-X = df.drop(columns=['ID próbki', 'Typ', 'S (%)', 'Ar (%)', 'R (%)', 'As (%)'])
+#X = df.drop(columns=['ID próbki', 'Typ', 'S (%)', 'Ar (%)', 'R (%)', 'As (%)'])
+X = df.drop(columns=['ID próbki', 'Typ'])
 y = df['Typ']
 
 custom_palette = {0: '#1f77b4', 1: '#ff7f0e', 2: '#2ca02c'}
@@ -119,11 +121,11 @@ all_rankings = {}
 all_class_acc = {}
 
 models = [
-    ("MLP", MLPClassifier(
+    ("MLP", make_pipeline(StandardScaler(), MLPClassifier(
         activation='tanh', alpha=0.0001, hidden_layer_sizes=(100, 50),
-        learning_rate='constant', max_iter=200, solver='lbfgs', random_state=9)),
-    ("KNN", KNeighborsClassifier(n_neighbors=4, metric="manhattan", weights="uniform")),
-    ("SVC", SVC(kernel='linear', C=100, random_state=9)),
+        learning_rate='constant', max_iter=200, solver='lbfgs', random_state=9))),
+    ("KNN", make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=4, metric="manhattan", weights="uniform"))),
+    ("SVC", make_pipeline(StandardScaler(), SVC(kernel='linear', C=100, random_state=9))),
     ("Decision Tree", DecisionTreeClassifier(
         criterion='gini', max_depth=3, max_features='sqrt',
         min_samples_leaf=1, min_samples_split=2, min_weight_fraction_leaf=0.0, random_state=9)),
@@ -146,10 +148,10 @@ for split in split_counts:
     for name, model in models:
         print("="*50)
         print(name)
-        cv_scores = cross_val_score(model, X_scaled, y, cv=cv, scoring='accuracy')
+        cv_scores = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
         mean_acc = cv_scores.mean()
         model_scores.append((name, mean_acc))
-        y_pred_cv = cross_val_predict(model, X_scaled, y, cv=cv)
+        y_pred_cv = cross_val_predict(model, X, y, cv=cv)
         # Map integer labels to string labels for reporting
         y_str = y.map(reverse_label_mapping)
         y_pred_cv_str = pd.Series(y_pred_cv).map(reverse_label_mapping)
@@ -331,13 +333,13 @@ if graph_flags['cv_summary']:
     for cls in label_mapping.keys():
         plt.figure(figsize=(8, 5))
         for model, _ in models:
-            recalls = []
+            precisions = []
             for split in split_counts:
-                recalls.append(all_class_acc[split][model][cls])
-            plt.plot(split_counts, recalls, marker='o', label=model)
-        plt.title(f"Per-class Mean Recall for '{cls}'")
+                precisions.append(all_class_acc[split][model][cls])
+            plt.plot(split_counts, precisions, marker='o', label=model)
+        plt.title(f"Per-class Mean Precision for '{cls}'")
         plt.xlabel("CV Split Count")
-        plt.ylabel("Mean Recall")
+        plt.ylabel("Mean Precision")
         plt.xticks(split_counts)
         plt.ylim(0, 1.05)
         plt.legend()
