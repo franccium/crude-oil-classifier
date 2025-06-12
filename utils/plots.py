@@ -104,7 +104,7 @@ def plot_svc_decision_boundary(clf, X_train, y_train, X_test, y_test, label_mapp
     cbar = plt.colorbar(scatter_train)
     cbar.set_ticks(list(label_mapping.values()))
     cbar.set_ticklabels(list(label_mapping.keys()))
-    cbar.set_label('Typ')
+    cbar.set_label('Type')
     plt.legend()
     plt.tight_layout()
     plt.show(block=False)
@@ -115,14 +115,14 @@ def plot_data_scatter(df):
     plt.figure(figsize=(8, 6))
     for typ, color in custom_palette.items():
         plt.scatter(
-            df.loc[df['Typ'] == typ, 'Gęstość'],
-            df.loc[df['Typ'] == typ, 'CII'],
+            df.loc[df['Type'] == typ, 'Density'],
+            df.loc[df['Type'] == typ, 'CII'],
             c=color,
             label=label_names[typ],
             edgecolor='k',
             s=50
         )
-    plt.xlabel('Gęstość')
+    plt.xlabel('Density')
     plt.ylabel('CII')
     plt.legend(title='Type')
     plt.grid(True)
@@ -133,17 +133,17 @@ def plot_data_scatter(df):
     ax = fig.add_subplot(111, projection='3d')
     for typ, color in custom_palette.items():
         ax.scatter(
-            df.loc[df['Typ'] == typ, 'Gęstość'],
-            df.loc[df['Typ'] == typ, 'CII'],
-            df.loc[df['Typ'] == typ, 'S (%)'],
+            df.loc[df['Type'] == typ, 'Density'],
+            df.loc[df['Type'] == typ, 'CII'],
+            df.loc[df['Type'] == typ, 'S'],
             c=color,
             label=label_names[typ],
             edgecolor='k',
             s=50
         )
-    ax.set_xlabel('Gęstość')
+    ax.set_xlabel('Density')
     ax.set_ylabel('CII')
-    ax.set_zlabel('S (%)')
+    ax.set_zlabel('S')
     ax.legend(title='Type')
     plt.tight_layout()
     plt.show(block=False)

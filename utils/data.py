@@ -14,9 +14,9 @@ def load_data(filename, graph_flags):
     print("====================\n")
     if 'Nr' in df.columns:
         df = df.drop('Nr', axis='columns')
-    df['Typ'] = df['Typ'].map(label_mapping)
-    X = df.drop(columns=['ID próbki', 'Typ', 'S (%)', 'Ar (%)', 'R (%)', 'As (%)'])
-    y = df['Typ']
+    df['Type'] = df['Type'].map(label_mapping)
+    X = df.drop(columns=['Sample ID', 'Type'])
+    y = df['Type']
 
     if graph_flags['data_scatter']:
         plot_data_scatter(df)
