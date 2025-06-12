@@ -18,7 +18,6 @@ graph_flags = select_graphs()
 X, y, df = load_data(filename, graph_flags)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-split_counts = [5, 6, 7]
 all_rankings = {}
 all_class_acc = {}
 
@@ -61,6 +60,12 @@ if graph_flags['feature_space']:
     plt.show()
     
 if graph_flags['cv_summary']:
-    report_cv_results(models, split_counts, all_rankings, all_class_acc, label_mapping)
+    report_cv_results(
+        models,
+        split_counts=[5, 6, 7],
+        all_rankings=all_rankings,
+        all_class_acc=all_class_acc,
+        label_mapping=label_mapping
+    )
 
 plt.show()
