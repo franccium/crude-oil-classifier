@@ -2,7 +2,7 @@
 import pandas as pd
 import os
 import joblib
-from utils.markers import asses_ci
+from utils.markers import asses_cii
 
 def test_sara_regression(S, Ar, R, As):
     input_data = pd.DataFrame([{
@@ -14,5 +14,5 @@ def test_sara_regression(S, Ar, R, As):
     sara_reg_model = joblib.load(os.path.join('..', 'models', 'sara_linear_regression.pkl'))
     cii = sara_reg_model.predict(input_data)
 
-    return asses_ci(cii), cii
+    return asses_cii(cii), cii
 

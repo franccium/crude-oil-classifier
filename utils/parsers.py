@@ -8,7 +8,7 @@ def parse_sara(filename='sara.csv'):
     df = pd.read_csv(file)
 
     def parse_composition(comp):
-        match = re.match(r"(\d+)%([A-Z]+)/(\d+)%([A-Z]+)", comp)
+        match = re.match(r"(\d+)(?=%[A-Z])(?!\d)%([A-Z]+)/(\d+)(?=%[A-Z])(?!\d)%([A-Z]+)", comp)
         if not match:
             raise ValueError("Input csv wrongly defined")
         pct1, id1, pct2, id2 = match.groups()

@@ -24,4 +24,6 @@ def sara_linear_regression_train():
 
     return regr
 
-sara_linear_regression_train()
+def s_value_linear_regression_train():
+    pass
+
