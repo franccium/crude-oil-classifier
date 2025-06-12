@@ -69,8 +69,8 @@ if 'Nr' in df.columns:
 label_mapping = {'light': 0, 'medium': 1, 'heavy': 2}
 reverse_label_mapping = {v: k for k, v in label_mapping.items()}
 df['Typ'] = df['Typ'].map(label_mapping)
-#X = df.drop(columns=['ID próbki', 'Typ', 'S (%)', 'Ar (%)', 'R (%)', 'As (%)'])
-X = df.drop(columns=['ID próbki', 'Typ'])
+X = df.drop(columns=['ID próbki', 'Typ', 'S (%)', 'Ar (%)', 'R (%)', 'As (%)'])
+#X = df.drop(columns=['ID próbki', 'Typ'])
 y = df['Typ']
 
 custom_palette = {0: '#1f77b4', 1: '#ff7f0e', 2: '#2ca02c'}
@@ -113,6 +113,8 @@ if graph_flags['data_scatter']:
     plt.tight_layout()
     plt.show(block=False)
 
+plt.show()
+
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
@@ -134,51 +136,52 @@ models = [
         min_samples_leaf=1, min_samples_split=2, random_state=9))
 ]
 
-for split in split_counts:
-    print("\n" + "="*60)
-    print(f" CROSS-VALIDATION SPLIT COUNT: {split} ".center(60, "="))
-    print("="*60)
-    model_scores = []
-    class_acc = {}
+if graph_flags['cv_summary']:
+    for split in split_counts:
+        print("\n" + "="*60)
+        print(f" CROSS-VALIDATION SPLIT COUNT: {split} ".center(60, "="))
+        print("="*60)
+        model_scores = []
+        class_acc = {}
 
-    cv = StratifiedKFold(n_splits=split, shuffle=True, random_state=9)
+        cv = StratifiedKFold(n_splits=split, shuffle=True, random_state=9)
 
-    reverse_label_mapping = {v: k for k, v in label_mapping.items()}
+        reverse_label_mapping = {v: k for k, v in label_mapping.items()}
 
-    for name, model in models:
+        for name, model in models:
+            print("="*50)
+            print(name)
+            cv_scores = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
+            mean_acc = cv_scores.mean()
+            model_scores.append((name, mean_acc))
+            y_pred_cv = cross_val_predict(model, X, y, cv=cv)
+            # Map integer labels to string labels for reporting
+            y_str = y.map(reverse_label_mapping)
+            y_pred_cv_str = pd.Series(y_pred_cv).map(reverse_label_mapping)
+            report = classification_report(y_str, y_pred_cv_str, target_names=label_mapping.keys(), output_dict=True)
+            print(classification_report(y_str, y_pred_cv_str, target_names=label_mapping.keys()))
+            # Collect per-class accuracy
+            class_acc[name] = {cls: report[cls]['recall'] for cls in label_mapping.keys()}
+            print(f"Mean CV accuracy: {mean_acc:.3f}")
+
+        # Ranking for this split count
+        print("\n" + "="*50)
+        print(f"FINAL MODEL RANKING (CV splits: {split})")
         print("="*50)
-        print(name)
-        cv_scores = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
-        mean_acc = cv_scores.mean()
-        model_scores.append((name, mean_acc))
-        y_pred_cv = cross_val_predict(model, X, y, cv=cv)
-        # Map integer labels to string labels for reporting
-        y_str = y.map(reverse_label_mapping)
-        y_pred_cv_str = pd.Series(y_pred_cv).map(reverse_label_mapping)
-        report = classification_report(y_str, y_pred_cv_str, target_names=label_mapping.keys(), output_dict=True)
-        print(classification_report(y_str, y_pred_cv_str, target_names=label_mapping.keys()))
-        # Collect per-class accuracy
-        class_acc[name] = {cls: report[cls]['recall'] for cls in label_mapping.keys()}
-        print(f"Mean CV accuracy: {mean_acc:.3f}")
-
-    # Ranking for this split count
-    print("\n" + "="*50)
-    print(f"FINAL MODEL RANKING (CV splits: {split})")
-    print("="*50)
-    ranking = sorted(model_scores, key=lambda x: x[1], reverse=True)
-    all_rankings[split] = ranking
-    all_class_acc[split] = class_acc
-    for i, (name, score) in enumerate(ranking, 1):
-        print(f"{i}. {name:<15} {score:.3f}")
-    print("="*50)
-
-    # Per-class ranking for this split
-    print("\nPer-class accuracy ranking:")
-    for cls in label_mapping.keys():
-        print(f"\nClass: {cls}")
-        class_ranking = sorted([(name, class_acc[name][cls]) for name in class_acc], key=lambda x: x[1], reverse=True)
-        for i, (name, score) in enumerate(class_ranking, 1):
+        ranking = sorted(model_scores, key=lambda x: x[1], reverse=True)
+        all_rankings[split] = ranking
+        all_class_acc[split] = class_acc
+        for i, (name, score) in enumerate(ranking, 1):
             print(f"{i}. {name:<15} {score:.3f}")
+        print("="*50)
+
+        # Per-class ranking for this split
+        print("\nPer-class accuracy ranking:")
+        for cls in label_mapping.keys():
+            print(f"\nClass: {cls}")
+            class_ranking = sorted([(name, class_acc[name][cls]) for name in class_acc], key=lambda x: x[1], reverse=True)
+            for i, (name, score) in enumerate(class_ranking, 1):
+                print(f"{i}. {name:<15} {score:.3f}")
 
 def plot_decision_boundary(clf, X_train, y_train, X_test, y_test, title, label_mapping):
     reverse_label_mapping = {v: k for k, v in label_mapping.items()}
@@ -313,40 +316,6 @@ if graph_flags['feature_space']:
     plt.show()
     
 if graph_flags['cv_summary']:
-    plt.figure(figsize=(8, 5))
-    for model, _ in models:
-        scores = []
-        for split in split_counts:
-            for name, score in all_rankings[split]:
-                if name == model:
-                    scores.append(score)
-        plt.plot(split_counts, scores, marker='o', label=model)
-    plt.title("Mean CV Accuracy vs Split Count")
-    plt.xlabel("CV Split Count")
-    plt.ylabel("Mean CV Accuracy")
-    plt.xticks(split_counts)
-    plt.ylim(0, 1.05)
-    plt.legend()
-    plt.tight_layout()
-    plt.show(block=False)
-
-    for cls in label_mapping.keys():
-        plt.figure(figsize=(8, 5))
-        for model, _ in models:
-            precisions = []
-            for split in split_counts:
-                precisions.append(all_class_acc[split][model][cls])
-            plt.plot(split_counts, precisions, marker='o', label=model)
-        plt.title(f"Per-class Mean Precision for '{cls}'")
-        plt.xlabel("CV Split Count")
-        plt.ylabel("Mean Precision")
-        plt.xticks(split_counts)
-        plt.ylim(0, 1.05)
-        plt.legend()
-        plt.tight_layout()
-        plt.show(block=False)
-
-    # summary table
     print("\n" + "="*60)
     print("Mean CV accuracy vs split count for each model:")
     print("="*60)
@@ -360,7 +329,6 @@ if graph_flags['cv_summary']:
         print(f"{model:<15} {scores[0]:>8} {scores[1]:>8} {scores[2]:>8}")
     print("="*60)
 
-    # summary per-class table
     print("\n" + "="*60)
     print("Per-class mean precision for each model and split count:")
     print("="*60)
@@ -374,5 +342,46 @@ if graph_flags['cv_summary']:
                 line += f"{precision:>12.3f}"
             print(line)
     print("="*60)
+    
+    n_classes = len(label_mapping)
+    n_subplots = 1 + n_classes
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-    plt.show()
+    axes = axes.flatten()
+
+    ax = axes[0]
+    for model, _ in models:
+        scores = []
+        for split in split_counts:
+            for name, score in all_rankings[split]:
+                if name == model:
+                    scores.append(score)
+        ax.plot(split_counts, scores, marker='o', label=model)
+    ax.set_title("Mean CV Accuracy")
+    ax.set_xlabel("CV Split Count")
+    ax.set_ylabel("Mean CV Accuracy")
+    ax.set_xticks(split_counts)
+    ax.set_ylim(0, 1.05)
+    ax.legend()
+    ax.grid(True)
+
+    for idx, cls in enumerate(label_mapping.keys()):
+        ax = axes[idx + 1]
+        for model, _ in models:
+            precisions = []
+            for split in split_counts:
+                precisions.append(all_class_acc[split][model][cls])
+            ax.plot(split_counts, precisions, marker='o', label=model)
+        ax.set_title(f"Precision: {cls}")
+        ax.set_xlabel("CV Split Count")
+        ax.set_ylabel("Mean Precision")
+        ax.set_xticks(split_counts)
+        ax.set_ylim(0, 1.05)
+        ax.legend()
+        ax.grid(True)
+
+    for i in range(n_subplots, 4):
+        fig.delaxes(axes[i])
+
+    plt.tight_layout()
+plt.show()
