@@ -11,7 +11,7 @@ def test_sara_regression(S, Ar, R, As):
         'R': R,
         'As': As
     }])
-    sara_reg_model = joblib.load(os.path.join('..', 'models=', 'sara_linear_regression.pkl'))
+    sara_reg_model = joblib.load(os.path.join('..', 'models', 'sara_linear_regression.pkl'))
     cii = sara_reg_model.predict(input_data)
 
     return asses_ci(cii), cii
