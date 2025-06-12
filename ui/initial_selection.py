@@ -1,5 +1,6 @@
 
 import tkinter as tk
+import os
 
 def select_dataset():
     def set_choice(choice):
@@ -14,7 +15,7 @@ def select_dataset():
     tk.Button(root, text="Original", width=20, command=lambda: set_choice("data_original.csv")).pack(pady=5)
     tk.Button(root, text="Augmented", width=20, command=lambda: set_choice("data_augmented.csv")).pack(pady=5)
     root.mainloop()
-    return "data//" + selected_file #change to \\ for windows
+    return os.path.join("data", selected_file)
 
 def select_graphs():
     root = tk.Tk()
