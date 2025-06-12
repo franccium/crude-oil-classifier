@@ -20,7 +20,7 @@ def sara_linear_regression_train():
 
     regr = LinearRegression()
     regr.fit(X, y)
-    joblib.dump(regr, os.path.join('..', 'models', 'sara_linear_regression.plt' ))
+    joblib.dump(regr, os.path.join('..', 'models', 'sara_linear_regression.pkl' ))
 
     return regr
 
