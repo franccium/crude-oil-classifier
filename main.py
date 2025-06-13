@@ -10,8 +10,9 @@ from training.cross_validation import evaluate_models_cv, report_cv_results
 from utils.data import load_data, label_mapping, reverse_label_mapping
 from ui.initial_selection import select_dataset, select_graphs, select_featureset, select_mode, select_model_file, get_best_model_for_featureset
 
-from regression.train_regression_models import tsi_value_linear_regression_train, s_value_linear_regression_train, p_value_linear_regression_train
+from regression.train_regression_models import tsi_value_linear_regression_train, s_value_linear_regression_train, p_value_linear_regression_train, asmix_linear_regression_train
 
+asmix_linear_regression_train()
 
 #todo placeholder code
 def test_exported_model():

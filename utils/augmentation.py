@@ -48,3 +48,22 @@ def sara_aug(df, max_aug=15):
         augmented_df = augmented_df.sample(n=20).reset_index(drop=True)
 
     return augmented_df
+
+
+def aug2(df, max_aug=15):
+    columns_to_augment = ['S1','Ar1','R1','As1','%1','S2','Ar2','R2','As2','%2','AsMix']
+    n_augmentations = 3
+    noise_level = 0.05
+
+    augmented_rows = []
+    for _, row in df.iterrows():
+        for _ in range(n_augmentations):
+            noisy_values = row[columns_to_augment] * (1 + np.random.normal(0, noise_level, len(columns_to_augment)))
+            augmented_rows.append(noisy_values.tolist())
+
+    augmented_df = pd.DataFrame(augmented_rows, columns=columns_to_augment)
+
+    if len(augmented_df) > max_aug:
+        augmented_df = augmented_df.sample(n=20).reset_index(drop=True)
+
+    return augmented_df

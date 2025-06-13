@@ -55,3 +55,34 @@ def parse_p_value(filename='p_value.csv'):
     result_df = df[['P_Value_part1', 'P_Value_part2', 'P_Value_res']]
 
     return result_df
+
+def logit(p, eps=1e-6):
+    import numpy as np
+    p = np.clip(p, eps, 1 - eps)
+    return np.log(p / (1 - p))
+
+def parse_asmix(filename='mieszaniny.csv'):
+    file = os.path.join("data", filename)
+    df = pd.read_csv(file)
+    
+    from utils.augmentation import aug2
+    dfa = aug2(df)
+    df = pd.concat([dfa, df])
+    
+    df['S1_scaled'] = df['S1'] * (df['%1'] / 100)
+    df['Ar1_scaled'] = df['Ar1'] * (df['%1'] / 100)
+    df['R1_scaled'] = df['R1'] * (df['%1'] / 100)
+    df['As1_scaled'] = df['As1'] * (df['%1'] / 100)
+    df['S2_scaled'] = df['S2'] * (df['%2'] / 100)
+    df['Ar2_scaled'] = df['Ar2'] * (df['%2'] / 100)
+    df['R2_scaled'] = df['R2'] * (df['%2'] / 100)
+    df['As2_scaled'] = df['As2'] * (df['%2'] / 100)
+    
+    #todo typ ropy
+    features = [
+        'As1_scaled', '%1', 'S1_scaled', 'R1_scaled', 'Ar1_scaled',
+        'As2_scaled', '%2', 'S2_scaled', 'R2_scaled', 'Ar2_scaled'
+    ]
+    target = 'AsMix'
+    result_df = df[features + [target]]
+    return result_df

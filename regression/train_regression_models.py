@@ -228,6 +228,7 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = ""):
         try:
             regr.fit(X_train, y_train)
             y_pred = regr.predict(X_test)
+            print(y_pred)
             r2 = r2_score(y_test, y_pred)
             rmse = np.sqrt(mean_squared_error(y_test, y_pred))
             results.append((name, r2, rmse))
@@ -263,6 +264,11 @@ def p_value_linear_regression_train():
 def tsi_value_linear_regression_train():
     #compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
     linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
+    
+def asmix_linear_regression_train():
+    from utils.parsers import parse_asmix
+    #linear_regression_train(parse_asmix, 'AsMix', 'AsMix')
+    compare_regressors(parse_asmix, 'AsMix', 'AsMix')
 
 def s_value_linear_regression_train():
     #compare_regressors_with_gridsearch(parse_s_value, 'S_Value_res', 'S')
