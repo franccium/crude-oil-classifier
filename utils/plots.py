@@ -46,7 +46,7 @@ def plot_decision_boundary(clf, X_train, y_train, X_test, y_test,
     handles, labels = plt.gca().get_legend_handles_labels()
     handles.append(Line2D([0], [0], marker='X', color='w', label='Test data (X marker)',
                           markerfacecolor='gray', markeredgecolor='w', markersize=10, linestyle='None'))
-    plt.legend(handles=handles, title="Typ")
+    plt.legend(handles=handles, title="Type")
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)
@@ -54,7 +54,7 @@ def plot_decision_boundary(clf, X_train, y_train, X_test, y_test,
     plt.show(block=False)
 
 def plot_decision_tree(clf, feature_names, class_names, title):
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=(14, 9))
     plot_tree(
         clf,
         filled=True,
@@ -68,7 +68,7 @@ def plot_decision_tree(clf, feature_names, class_names, title):
     plt.show(block=False)
 
 def plot_random_forest_tree(rf, feature_names, class_names, title):
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=(14, 9))
     plot_tree(
         rf.estimators_[0],
         filled=True,
@@ -78,34 +78,6 @@ def plot_random_forest_tree(rf, feature_names, class_names, title):
         fontsize=10
     )
     plt.title(title)
-    plt.tight_layout()
-    plt.show(block=False)
-
-def plot_svc_decision_boundary(clf, X_train, y_train, X_test, y_test, label_mapping,
-                               x_label, y_label):
-    scaler_visualize = StandardScaler()
-    X_train_s = scaler_visualize.fit_transform(X_train)
-    X_test_s = scaler_visualize.transform(X_test)
-    clf.fit(X_train_s, y_train)
-    x_min, x_max = X_train_s[:, 0].min() - 1, X_train_s[:, 0].max() + 1
-    y_min = X_train_s[:, 1].min() - 1
-    y_max = X_train_s[:, 1].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
-                         np.arange(y_min, y_max, 0.02))
-    y_predicted = clf.predict(np.c_[xx.ravel(), yy.ravel()])
-    y_predicted = y_predicted.reshape(xx.shape)
-    plt.figure(figsize=(8, 6))
-    plt.contourf(xx, yy, y_predicted, alpha=0.8, cmap='viridis')
-    scatter_train = plt.scatter(X_train_s[:, 0], X_train_s[:, 1], c=y_train, cmap='viridis', edgecolors='k', label='Training data')
-    scatter_test = plt.scatter(X_test_s[:, 0], X_test_s[:, 1], c=y_test, cmap='viridis', edgecolors='w', linewidth=1, label='Test data')
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title('SVC Decision Boundary')
-    cbar = plt.colorbar(scatter_train)
-    cbar.set_ticks(list(label_mapping.values()))
-    cbar.set_ticklabels(list(label_mapping.keys()))
-    cbar.set_label('Type')
-    plt.legend()
     plt.tight_layout()
     plt.show(block=False)
 
@@ -149,43 +121,56 @@ def plot_data_scatter(df):
     plt.show(block=False)
 
 def plot_cv_results(models, split_counts, all_rankings, all_class_acc, label_mapping):
+    pastel_colors = plt.get_cmap('Pastel1').colors
+    model_names = [name for name, _ in models]
+    n_models = len(model_names)
+    x = np.arange(len(split_counts))
+    width = 0.15
+
     n_classes = len(label_mapping)
     n_subplots = 1 + n_classes
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    n_cols = 2
+    n_rows = 2
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 10))
     axes = axes.flatten()
 
-    # Plot overall accuracy
     ax = axes[0]
-    for model_name, _ in models:
+    for i, model_name in enumerate(model_names):
         scores = [score for split in split_counts
                   for name, score in all_rankings[split]
                   if name == model_name]
-        ax.plot(split_counts, scores, marker='o', label=model_name)
-    ax.set_title("Mean CV Accuracy")
-    ax.set_xlabel("CV Split Count")
-    ax.set_ylabel("Mean CV Accuracy")
-    ax.set_xticks(split_counts)
+        bars = ax.bar(x + i*width, scores, width, label=model_name, color=pastel_colors[i % len(pastel_colors)])
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate(f'{height:.2f}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=9)
+    ax.set_title("Mean CV Precision")
+    ax.set_xlabel("Folds")
+    ax.set_ylabel("Mean Precision")
+    ax.set_xticks(x + width*n_models/2 - width/2)
+    ax.set_xticklabels(split_counts)
     ax.set_ylim(0, 1.05)
     ax.legend()
-    ax.grid(True)
+    ax.grid(True, axis='y')
 
-    # Plot per-class precision
     for idx, cls in enumerate(label_mapping.keys()):
         ax = axes[idx + 1]
-        for model_name, _ in models:
+        for i, model_name in enumerate(model_names):
             precisions = [all_class_acc[split][model_name][cls] for split in split_counts]
-            ax.plot(split_counts, precisions, marker='o', label=model_name)
-        ax.set_title(f"Precision: {cls}")
-        ax.set_xlabel("CV Split Count")
+            bars = ax.bar(x + i*width, precisions, width, label=model_name, color=pastel_colors[i % len(pastel_colors)])
+            for bar in bars:
+                height = bar.get_height()
+                ax.annotate(f'{height:.2f}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                            xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=9)
+        ax.set_title(f"Per-class Precision ({cls})")
+        ax.set_xlabel("Folds")
         ax.set_ylabel("Mean Precision")
-        ax.set_xticks(split_counts)
+        ax.set_xticks(x + width*n_models/2 - width/2)
+        ax.set_xticklabels(split_counts)
         ax.set_ylim(0, 1.05)
         ax.legend()
-        ax.grid(True)
-
-    # Remove unused subplots
-    for i in range(n_subplots, len(axes)):
-        fig.delaxes(axes[i])
+        ax.grid(True, axis='y')
 
     plt.tight_layout()
-    plt.show()
+    plt.show(block=False)

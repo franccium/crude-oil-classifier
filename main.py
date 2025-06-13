@@ -8,14 +8,17 @@ from training.model_definition import models
 from training.models import ModelsTraining
 from training.cross_validation import evaluate_models_cv, report_cv_results
 from utils.data import load_data, label_mapping, reverse_label_mapping
-from ui.initial_selection import select_dataset, select_graphs
+from ui.initial_selection import select_dataset, select_graphs, select_featureset
 
 filename = select_dataset()
 if filename is None:
     exit()
+featureset = select_featureset()
+if featureset is None:
+    exit()
 
 graph_flags = select_graphs()
-X, y, df = load_data(filename, graph_flags)
+X, y, df = load_data(filename, graph_flags, featureset)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 all_rankings = {}
@@ -49,11 +52,12 @@ if graph_flags['feature_space']:
             X_vis,
             label_mapping
         )
-        models_training.mlp()
-        models_training.knn()
-        models_training.svc()
-        models_training.decision_tree()
-        models_training.random_forest()
+        export_model = True #todo might want to choose which to export, and give it a name or something
+        models_training.mlp(export_model)
+        models_training.knn(export_model)
+        models_training.svc(export_model)
+        models_training.decision_tree(export_model)
+        models_training.random_forest(export_model)
     else:
         print("Not enough features for 2D decision boundary plots.")
 

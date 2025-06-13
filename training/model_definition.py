@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 models = [
     ("MLP", make_pipeline(StandardScaler(), MLPClassifier(
         activation='tanh', alpha=0.0001, hidden_layer_sizes=(100, 50),
-        learning_rate='constant', max_iter=200, solver='lbfgs', random_state=9))),
+        learning_rate='constant', max_iter=200, solver='lbfgs', random_state=9))), # max_iter = 2000 is needed for augmented data all features to coverge
     ("KNN", make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=4, metric="manhattan", weights="uniform"))),
     ("SVC", make_pipeline(StandardScaler(), SVC(kernel='linear', C=100, random_state=9))),
     ("Decision Tree", DecisionTreeClassifier(

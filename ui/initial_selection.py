@@ -2,6 +2,26 @@
 import tkinter as tk
 import os
 
+featureset_density_CII = ['Density', 'CII']
+featureset_density_group = ['Density', 'S', 'Ar', 'R', 'As']
+featureset_density_group_CII = ['Density', 'S', 'Ar', 'R', 'As', 'CII']
+
+def select_featureset():
+    def set_choice(choice):
+        nonlocal selected_featureset
+        selected_featureset = choice
+        root.destroy()
+
+    selected_featureset = None
+    root = tk.Tk()
+    root.title("Choose feature set")
+    tk.Label(root, text="Choose feature set:").pack(padx=20, pady=10)
+    tk.Button(root, text="Density & CII", width=25, command=lambda: set_choice(featureset_density_CII)).pack(pady=5)
+    tk.Button(root, text="Density Group", width=25, command=lambda: set_choice(featureset_density_group)).pack(pady=5)
+    tk.Button(root, text="Density Group + CII", width=25, command=lambda: set_choice(featureset_density_group_CII)).pack(pady=5)
+    root.mainloop()
+    return selected_featureset
+
 def select_dataset():
     def set_choice(choice):
         nonlocal selected_file
@@ -14,6 +34,7 @@ def select_dataset():
     tk.Label(root, text="Choose dataset:").pack(padx=20, pady=10)
     tk.Button(root, text="Original", width=20, command=lambda: set_choice("data_original.csv")).pack(pady=5)
     tk.Button(root, text="Augmented", width=20, command=lambda: set_choice("data_augmented.csv")).pack(pady=5)
+    
     root.mainloop()
     return os.path.join("data", selected_file)
 

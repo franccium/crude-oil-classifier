@@ -5,9 +5,44 @@ import pandas as pd
 
 from utils.plots import plot_cv_results
 
+import joblib
+from datetime import datetime
+import os
+    
+def find_and_export_best_model(X, y, all_rankings, models):
+    best_split = None
+    best_model_name = None
+    best_score = -1
+
+    for split, ranking in all_rankings.items():
+        model_name, score = ranking[0]
+        if score > best_score:
+            best_score = score
+            best_split = split
+            best_model_name = model_name
+
+    print(f"Best split: {best_split}")
+    print(f"Best model: {best_model_name}")
+    print(f"Best mean CV accuracy: {best_score:.3f}")
+
+    best_model = None
+    for name, model in models:
+        if name == best_model_name:
+            best_model = model
+            break
+
+    best_model.fit(X, y)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{best_model_name.lower()}_{timestamp}.pkl"
+    export_dir = "exports"
+    os.makedirs(export_dir, exist_ok=True)
+    filepath = os.path.join(export_dir, filename)
+    joblib.dump(best_model, filepath)
+    print(f"Exported best model to {filepath}")
 
 def evaluate_models_cv(models, X, y, split_counts,
-                       label_mapping, reverse_label_mapping):
+                       label_mapping, reverse_label_mapping, export_best_model = False):
     all_rankings = {}
     all_class_acc = {}
 
@@ -59,6 +94,9 @@ def evaluate_models_cv(models, X, y, split_counts,
             )
             for i, (name, score) in enumerate(class_ranking, 1):
                 print(f"{i}. {name:<15} {score:.3f}")
+                
+    if export_best_model:
+        find_and_export_best_model(X, y, all_rankings, models)
 
     return all_rankings, all_class_acc
 
