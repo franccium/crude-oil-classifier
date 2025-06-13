@@ -1,12 +1,7 @@
 # TODO
 
 ## 1. Skończenie pierwszego etapu:
-- zobaczyć co zrobią modele po usunięciu CII z cech, dość ważne bo raczej nie chcemy z tego korzystać w następnych etapach
-- wygenerowanie wykresów przestrzeni cech dla naszych modeli:
-        - wykresy wg. zaleceń (podpisywane w sprawozdaniu), zastąpić te w sprawozdaniu
-        - wykresy dla cech dwuwymiarowych bo dla więcej to raczej ciężko
         - dla wielowymiarowych można drzewka dodać do sprawozdania
-- dodanie poprawnych tabel do sprawozdania z summary accuracy dla klas i accuracy sumarycznego, (z walidacją krzyżową)
 - dokończenie sprawozdania i poprawienie go
 - tytuły pod obrazkami
 

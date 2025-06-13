@@ -26,12 +26,32 @@ def parse_sara(filename='sara.csv'):
     ], axis=1)
     return final_df
 
-def parse_s_value(filename='s_value.csv'):
+def parse_s_value(filename='s_value_with_As.csv'):
     file = os.path.join("..", "data", filename)
     df = pd.read_csv(file)
     df['S_Value_part1'] = df['S_Value1'] * (df['%_1'] / 100)
     df['S_Value_part2'] = df['S_Value2'] * (df['%_2'] / 100)
 
-    result_df = df[['S_Value_part1', 'S_Value_part2', 'S_Value_res']]
+    result_df = df[['S_Value_part1', 'As1', 'S_Value_part2', 'As2', 'S_Value_res']]
+
+    return result_df
+
+def parse_tsi_value(filename='tsi_value.csv'):
+    file = os.path.join("data", filename)
+    df = pd.read_csv(file)
+    df['TSI_Value_part1'] = df['TSI_Value1'] * (df['%_1'] / 100)
+    df['TSI_Value_part2'] = df['TSI_Value2'] * (df['%_2'] / 100)
+
+    result_df = df[['TSI_Value_part1', 'TSI_Value_part2', 'TSI_Value_res']]
+
+    return result_df
+
+def parse_p_value(filename='p_value.csv'):
+    file = os.path.join("data", filename)
+    df = pd.read_csv(file)
+    df['P_Value_part1'] = df['P_Value1'] * (df['%_1'] / 100)
+    df['P_Value_part2'] = df['P_Value2'] * (df['%_2'] / 100)
+
+    result_df = df[['P_Value_part1', 'P_Value_part2', 'P_Value_res']]
 
     return result_df

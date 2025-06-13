@@ -13,6 +13,13 @@ def asses_s_value(s_value):
         return 1 # lower stability
     return 0 # unstable
 
+def asses_p_value(p_value):
+    if p_value > 2:
+        return 2 # stable
+    if p_value > 1.5:
+        return 1 # lower stability
+    return 0 # unstable
+
 def asses_tsi(tsi):
     if tsi > 2.5:
         return 2 # stable

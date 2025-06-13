@@ -10,6 +10,9 @@ from training.cross_validation import evaluate_models_cv, report_cv_results
 from utils.data import load_data, label_mapping, reverse_label_mapping
 from ui.initial_selection import select_dataset, select_graphs, select_featureset, select_mode, select_model_file, get_best_model_for_featureset
 
+from regression.train_regression_models import tsi_value_linear_regression_train, s_value_linear_regression_train, p_value_linear_regression_train
+
+
 #todo placeholder code
 def test_exported_model():
     model_file = select_model_file()
@@ -87,12 +90,11 @@ if graph_flags['feature_space']:
             X_vis,
             label_mapping
         )
-        export_model = True #todo might want to choose which to export, and give it a name or something
-        models_training.mlp(export_model)
-        models_training.knn(export_model)
-        models_training.svc(export_model)
-        models_training.decision_tree(export_model)
-        models_training.random_forest(export_model)
+        models_training.mlp()
+        models_training.knn()
+        models_training.svc()
+        models_training.decision_tree()
+        models_training.random_forest()
     else:
         print("Not enough features for 2D decision boundary plots.")
 
