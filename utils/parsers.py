@@ -25,3 +25,11 @@ def parse_sara(filename='sara.csv'):
         df.drop(columns=['Nr', 'Composition'])
     ], axis=1)
     return final_df
+
+def parse_s_value(filename='s_value.csv'):
+    file = os.path.join("..", "data", filename)
+    df = pd.read_csv(file)
+
+    result_df = df.drop(columns=['ID_1', 'ID_2'])
+
+    return result_df
