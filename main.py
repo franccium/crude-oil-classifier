@@ -8,7 +8,40 @@ from training.model_definition import models
 from training.models import ModelsTraining
 from training.cross_validation import evaluate_models_cv, report_cv_results
 from utils.data import load_data, label_mapping, reverse_label_mapping
-from ui.initial_selection import select_dataset, select_graphs, select_featureset
+from ui.initial_selection import select_dataset, select_graphs, select_featureset, select_mode, select_model_file, get_best_model_for_featureset
+
+#todo placeholder code
+def test_exported_model():
+    model_file = select_model_file()
+    if not model_file:
+        print("No model selected.")
+        return
+    featureset = select_featureset()
+    if featureset is None:
+        return
+    filename = select_dataset()
+    if filename is None:
+        return
+    flags = {
+        'feature_space': False,
+        'data_scatter': False,
+        'cv_summary': False
+    }
+    graph_flags = {k: v for k, v in flags.items()}
+
+    X, y, df = load_data(filename, graph_flags, featureset)
+    import joblib
+    model = joblib.load(model_file)
+    y_pred = model.predict(X)
+    from sklearn.metrics import accuracy_score, classification_report
+    print("Test accuracy:", accuracy_score(y, y_pred))
+    print(classification_report(y, y_pred))
+
+mode = select_mode()
+if mode == "test":
+    test_exported_model()
+    exit()
+
 
 filename = select_dataset()
 if filename is None:
@@ -16,6 +49,8 @@ if filename is None:
 featureset = select_featureset()
 if featureset is None:
     exit()
+    
+best_model_for_featureset = get_best_model_for_featureset(featureset)
 
 graph_flags = select_graphs()
 X, y, df = load_data(filename, graph_flags, featureset)
