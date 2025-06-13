@@ -30,6 +30,22 @@ def s_value_linear_regression_train():
     df = parse_s_value('s_value.csv')
     X = df.drop(columns=['S_Value_res'])
     y = df['S_Value_res']
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(
+        X.iloc[:, 0],  # First feature (X-axis)
+        X.iloc[:, 1],  # Second feature (Y-axis)
+        y,  # Target (Z-axis)
+        c='green', marker='o'
+    )
+    ax.set_xlabel(X.columns[0])
+    ax.set_ylabel(X.columns[1])
+    ax.set_zlabel('S_Value_res')
+    ax.set_title('3D Scatter Plot: Feature1 vs Feature2 vs Target')
+    plt.tight_layout()
+    plt.show()
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     regr = LinearRegression()
@@ -54,3 +70,4 @@ def s_value_linear_regression_train():
     plt.grid(True)
     plt.show()
 
+s_value_linear_regression_train()

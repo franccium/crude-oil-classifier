@@ -29,7 +29,9 @@ def parse_sara(filename='sara.csv'):
 def parse_s_value(filename='s_value.csv'):
     file = os.path.join("..", "data", filename)
     df = pd.read_csv(file)
+    df['S_Value_part1'] = df['S_Value1'] * (df['%_1'] / 100)
+    df['S_Value_part2'] = df['S_Value2'] * (df['%_2'] / 100)
 
-    result_df = df.drop(columns=['ID_1', 'ID_2'])
+    result_df = df[['S_Value_part1', 'S_Value_part2', 'S_Value_res']]
 
     return result_df
