@@ -49,12 +49,7 @@ def sara_aug(df, max_aug=15):
 
     return augmented_df
 
-
-def aug2(df, target='AsMix', max_aug=15):
-    columns_to_augment = ['D1','S1','Ar1','R1','As1','%1','D2','S2','Ar2','R2','As2','%2',target]
-    n_augmentations = 3
-    noise_level = 0.05
-
+def augment_data(df, columns_to_augment, n_augmentations, max_aug=15, noise_level=0.05):
     augmented_rows = []
     for _, row in df.iterrows():
         for _ in range(n_augmentations):

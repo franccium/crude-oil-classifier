@@ -36,12 +36,20 @@ def parse_s_value(filename='s_value_with_As.csv'):
 
     return result_df
 
-def parse_tsi_value(filename='tsi_value.csv'):
+def parse_tsi_value(filename='tsi_value_with_As.csv'):
     file = os.path.join("data", filename)
     df = pd.read_csv(file)
+    
+    from utils.augmentation import augment_data
+    columns_to_augment = df.columns.tolist()
+    dfa = augment_data(df, columns_to_augment, 3, 35, 0.05)
+    df = pd.concat([dfa, df])
+    
     df['TSI_Value_part1'] = df['TSI_Value1'] * (df['%_1'] / 100)
     df['TSI_Value_part2'] = df['TSI_Value2'] * (df['%_2'] / 100)
-
+    df['As1_scaled'] = df['As1'] * (df['%_1'] / 100)
+    df['As2_scaled'] = df['As2'] * (df['%_2'] / 100)
+    
     result_df = df[['TSI_Value_part1', 'TSI_Value_part2', 'TSI_Value_res']]
 
     return result_df
@@ -67,8 +75,8 @@ def parse_asmix(filename='mieszaniny.csv'):
     file = os.path.join("data", filename)
     df = pd.read_csv(file)
     
-    from utils.augmentation import aug2
-    dfa = aug2(df)
+    from utils.augmentation import augment_data
+    dfa = augment_data(df, df.columns.tolist(), 3, 15, 0.05)
     df = pd.concat([dfa, df])
     
     df['S1_scaled'] = df['S1'] * (df['%1'] / 100)
@@ -95,8 +103,8 @@ def parse_asmix_with_density(filename='mieszaniny_sara_with_density.csv'):
     df = pd.read_csv(file)
     target = 'AsMix'
     
-    from utils.augmentation import aug2
-    dfa = aug2(df, target, 25)
+    from utils.augmentation import augment_data
+    dfa = augment_data(df, df.columns.tolist(), 3, 25, 0.05)
     df = pd.concat([dfa, df])
     
     df['D1_scaled'] = df['D1'] * (df['%1'] / 100)

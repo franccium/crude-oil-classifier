@@ -184,7 +184,7 @@ def compare_regressors_with_gridsearch(parse_func, target_column: str, title_pre
         plt.tight_layout()
         plt.show()
         
-def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 15):
+def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 50):
     from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor, SGDRegressor
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor, BaggingRegressor
     from sklearn.tree import DecisionTreeRegressor
@@ -348,8 +348,8 @@ def p_value_linear_regression_train():
     #compare_regressors_with_gridsearch(parse_p_value, 'P_Value_res', 'P')
 
 def tsi_value_linear_regression_train():
-    #compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
-    linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
+    compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
+    #linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
     
 def asmix_linear_regression_train():
     from utils.parsers import parse_asmix, parse_asmix_with_density, parse_asmix_with_density_find_CII
