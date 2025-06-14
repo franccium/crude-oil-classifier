@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, SGDRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RepeatedKFold, train_test_split
 from sklearn.svm import SVR
 
 from utils.parsers import parse_sara, parse_s_value, parse_tsi_value, parse_p_value
@@ -222,7 +222,7 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n
         ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
     ]
 
-    results = {name: {"r2": [], "rmse": []} for name, _ in regressors}
+    results = {name: {"r2": [], "rmse": [], "mae": [], "devs": []} for name, _ in regressors}
 
     for run in range(n_runs):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=run)
@@ -232,22 +232,63 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n
                 y_pred = regr.predict(X_test)
                 r2 = r2_score(y_test, y_pred)
                 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+                mae = np.mean(np.abs(y_test - y_pred))
+                devs = y_test - y_pred
                 results[name]["r2"].append(r2)
                 results[name]["rmse"].append(rmse)
+                results[name]["mae"].append(mae)
+                results[name]["devs"].extend(devs)
             except Exception:
                 continue
 
     summary = []
     for name in results:
+        if len(results[name]["devs"]) == 0:
+            print(f"{name}: No successful runs, skipping statistics.")
+            continue
         r2_mean = np.mean(results[name]["r2"])
         rmse_mean = np.mean(results[name]["rmse"])
-        summary.append((name, r2_mean, rmse_mean))
-        print(f"{name}: Mean Test R^2 = {r2_mean:.4f}, Mean RMSE = {rmse_mean:.4f}")
+        mae_mean = np.mean(results[name]["mae"])
+        devs = np.array(results[name]["devs"])
+        dev_mean = np.mean(devs)
+        dev_std = np.std(devs)
+        dev_max = np.max(devs)
+        dev_min = np.min(devs)
+        summary.append((name, r2_mean, rmse_mean, mae_mean, dev_mean, dev_std, dev_max, dev_min))
+        print(
+            f"{name}: Mean R^2 = {r2_mean:.4f}, Mean RMSE = {rmse_mean:.4f}, "
+            f"Mean MAE = {mae_mean:.4f}, Mean Dev = {dev_mean:.4f}, "
+            f"Std Dev = {dev_std:.4f}, Max Dev = {dev_max:.4f}, Min Dev = {dev_min:.4f}"
+        )
 
     summary.sort(key=lambda x: x[1], reverse=True)
     print("\n====== Model Ranking by Mean Test R^2 ======")
-    for i, (name, r2, rmse) in enumerate(summary, 1):
-        print(f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}")
+    for i, (name, r2, rmse, mae, dev_mean, dev_std, dev_max, dev_min) in enumerate(summary, 1):
+        print(
+            f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}, "
+            f"Mean MAE = {mae:.4f}, Mean Dev = {dev_mean:.4f}, "
+            f"Std Dev = {dev_std:.4f}, Max Dev = {dev_max:.4f}, Min Dev = {dev_min:.4f}"
+        )
+        
+    names = [x[0] for x in summary]
+    mean_r2 = [x[1] for x in summary]
+    mean_rmse = [x[2] for x in summary]
+
+    fig, ax1 = plt.subplots(figsize=(12, 5))
+    ax1.bar(names, mean_r2, color='skyblue')
+    ax1.set_ylabel('Mean R²')
+    ax1.set_title('Mean R² by Model')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+
+    fig, ax2 = plt.subplots(figsize=(12, 5))
+    ax2.bar(names, mean_rmse, color='salmon')
+    ax2.set_ylabel('Mean RMSE')
+    ax2.set_title('Mean RMSE by Model')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
 
     best_name = summary[0][0]
     best_regr = dict(regressors)[best_name]
@@ -264,6 +305,148 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n
     plt.tight_layout()
     plt.show()
 
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score, KFold
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GridSearchCV, RepeatedKFold
+from sklearn.ensemble import GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor
+
+def tune_top_regressors(parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 5):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+
+    param_grids = {
+        "GradientBoostingRegressor": {
+            "n_estimators": [50, 100, 200],
+            "learning_rate": [0.01, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3],
+            "max_depth": [2, 3, 4, 5],
+            "subsample": [0.7, 0.85, 1.0],
+            "min_samples_split": [2, 5, 10]
+        },
+        "AdaBoostRegressor": {
+            "n_estimators": [50, 100, 200, 300],
+            "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.5, 1.0],
+            "loss": ["linear", "square", "exponential"]
+        },
+        "ExtraTreesRegressor": {
+            #"n_estimators": [50, 100, 200, 300],
+            "n_estimators": [50, 100],
+            "max_depth": [None, 4, 8, 12],
+            "min_samples_split": [2, 5, 10],
+            "min_samples_leaf": [1, 2, 4]
+        }
+    }
+
+    regressors = {
+        #"GradientBoostingRegressor": GradientBoostingRegressor(random_state=42),
+        #"AdaBoostRegressor": AdaBoostRegressor(random_state=42),
+        "ExtraTreesRegressor": ExtraTreesRegressor(random_state=42)
+    }
+
+    for name in regressors:
+        print(f"\nTuning {name}...")
+        grid = GridSearchCV(
+            regressors[name],
+            param_grids[name],
+            scoring='r2',
+            cv=rkf,
+            n_jobs=-1,
+            verbose=2
+        )
+        grid.fit(X, y)
+        print(f"Best R^2: {grid.best_score_:.4f}")
+        print(f"Best Params: {grid.best_params_}")
+
+        # Optionally, also print RMSE for best estimator
+        from sklearn.model_selection import cross_val_score
+        best_model = grid.best_estimator_
+        neg_mse = cross_val_score(best_model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
+        rmse = np.sqrt(-neg_mse)
+        print(f"Best RMSE (mean ± std): {rmse.mean():.4f} ± {rmse.std():.4f}")
+
+
+def compare_regressors_repeated_cv(parse_func, target_column: str, title_prefix: str = "", cv_folds: int = 5, n_repeats: int = 25):
+    from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor, SGDRegressor
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor, BaggingRegressor
+    from sklearn.tree import DecisionTreeRegressor
+    from sklearn.svm import SVR, LinearSVR, NuSVR
+    from sklearn.neural_network import MLPRegressor
+    from sklearn.cross_decomposition import PLSRegression
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.neighbors import KNeighborsRegressor, RadiusNeighborsRegressor
+
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    regressors = [
+        ("LinearRegression", LinearRegression()),
+        ("Ridge", Ridge()),
+        ("Lasso", Lasso()),
+        ("ElasticNet", ElasticNet()),
+        ("BayesianRidge", BayesianRidge()),
+        ("HuberRegressor", HuberRegressor()),
+        ("SGDRegressor", SGDRegressor(max_iter=1000, tol=1e-3)),
+        ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42)),
+        ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=42)),
+        ("ExtraTreesRegressor", ExtraTreesRegressor(n_estimators=100, random_state=42)),
+        ("GradientBoostingRegressor", GradientBoostingRegressor(n_estimators=100, random_state=42)),
+        ("AdaBoostRegressor", AdaBoostRegressor(n_estimators=100, random_state=42)),
+        ("BaggingRegressor", BaggingRegressor(n_estimators=100, random_state=42)),
+        ("KNeighborsRegressor", KNeighborsRegressor()),
+        ("NuSVR", NuSVR()),
+        ("RadiusNeighborsRegressor", RadiusNeighborsRegressor()),
+        ("GaussianProcessRegressor", GaussianProcessRegressor()),
+        ("PLSRegression", PLSRegression()),
+        ("LinearSVR", LinearSVR()),
+        ("SVR", SVR()),
+        ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
+    ]
+
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+    results = []
+
+    for name, regr in regressors:
+        try:
+            r2_scores = cross_val_score(regr, X, y, cv=rkf, scoring='r2', n_jobs=-1)
+            neg_mse_scores = cross_val_score(regr, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
+            rmse_scores = np.sqrt(-neg_mse_scores)
+            results.append((
+                name,
+                np.mean(r2_scores), np.std(r2_scores),
+                np.mean(rmse_scores), np.std(rmse_scores)
+            ))
+            print(
+                f"{name}: Repeated CV Mean R^2 = {np.mean(r2_scores):.4f} (±{np.std(r2_scores):.4f}), "
+                f"Mean RMSE = {np.mean(rmse_scores):.4f} (±{np.std(rmse_scores):.4f})"
+            )
+        except Exception as e:
+            print(f"{name}: Failed with error: {e}")
+
+    results.sort(key=lambda x: x[1], reverse=True)
+    print("\n====== Model Ranking by Repeated CV Mean R^2 ======")
+    for i, (name, r2_mean, r2_std, rmse_mean, rmse_std) in enumerate(results, 1):
+        print(
+            f"{i}. {name}: Mean R^2 = {r2_mean:.4f} (±{r2_std:.4f}), "
+            f"Mean RMSE = {rmse_mean:.4f} (±{rmse_std:.4f})"
+        )
+
+    names = [x[0] for x in results]
+    mean_r2 = [x[1] for x in results]
+    std_r2 = [x[2] for x in results]
+    plt.figure(figsize=(12, 5))
+    plt.bar(names, mean_r2, yerr=std_r2, color='skyblue', capsize=5)
+    plt.ylabel('Repeated CV Mean R²')
+    plt.title('Repeated CV Mean R² by Model')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
 
 def compare_best_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 40):
     df = parse_func()
@@ -344,11 +527,15 @@ def compare_best_regressors(parse_func, target_column: str, title_prefix: str = 
     
 def p_value_linear_regression_train():
     #linear_regression_train(parse_p_value, 'P_Value_res', 'P')
-    compare_regressors(parse_p_value, 'P_Value_res', 'P')
+    #compare_regressors(parse_p_value, 'P_Value_res', 'P')
+    #compare_regressors_repeated_cv(parse_p_value, 'P_Value_res', 'P', cv_folds=5, n_repeats=20)
+    tune_top_regressors(parse_p_value, 'P_Value_res', cv_folds=5, n_repeats=20)
     #compare_regressors_with_gridsearch(parse_p_value, 'P_Value_res', 'P')
 
 def tsi_value_linear_regression_train():
-    compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
+    #compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
+    tune_top_regressors(parse_tsi_value, 'TSI_Value_res', cv_folds=5, n_repeats=20)
+    #compare_regressors_repeated_cv(parse_tsi_value, 'TSI_Value_res', 'TSI', cv_folds=5, n_repeats=20)
     #linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
     
 def asmix_linear_regression_train():
@@ -359,13 +546,15 @@ def asmix_linear_regression_train():
     #compare_regressors(parse_asmix_with_density, target, target)
     #compare_regressors(parse_asmix_with_density_find_CII, target, target)
     #compare_regressors_with_gridsearch(parse_asmix_with_density_find_CII, target, target)
-    compare_best_regressors(parse_asmix_with_density_find_CII, target, target)
+    #compare_best_regressors(parse_asmix_with_density_find_CII, target, target)
+    compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, target, target, cv_folds=5, n_repeats=20)
     #compare_regressors_with_gridsearch(parse_asmix_with_density, target, target)
     #compare_best_regressors(parse_asmix_with_density, target, target)
 
 def s_value_linear_regression_train():
     #compare_regressors_with_gridsearch(parse_s_value, 'S_Value_res', 'S')
     #compare_regressors(parse_s_value, 'S_Value_res', 'S')
+    compare_regressors_repeated_cv(parse_s_value, 'S_Value_res', 'S', cv_folds=5, n_repeats=20)
     df = parse_tsi_value()
     print(df.head())
     df = parse_s_value('s_value.csv')
