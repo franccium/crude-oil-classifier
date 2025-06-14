@@ -117,13 +117,13 @@ def parse_asmix_with_density(filename='mieszaniny_sara_with_density.csv'):
     result_df = df[features + [target]]
     return result_df
 
-def parse_asmix_with_density_find_CII(filename='mieszaniny_sara_with_density.csv'):
+def parse_asmix_with_density_find_CII(filename='mieszaniny_sara_with_density copy.csv'):
     file = os.path.join("data", filename)
     df = pd.read_csv(file)
     target = 'CII'
     
     from utils.augmentation import aug2
-    dfa = aug2(df, 'AsMix', 15)
+    dfa = aug2(df, target, 15)
     df = pd.concat([dfa, df])
     
     df['D1_scaled'] = df['D1'] * (df['%1'] / 100)
@@ -138,14 +138,10 @@ def parse_asmix_with_density_find_CII(filename='mieszaniny_sara_with_density.csv
     df['R2_scaled'] = df['R2'] * (df['%2'] / 100)
     df['As2_scaled'] = df['As2'] * (df['%2'] / 100)
     
-    numerator = df['As1_scaled'] + df['S1_scaled'] + df['As2_scaled'] + df['S2_scaled']
-    denominator = df['R1_scaled'] + df['Ar1_scaled'] + df['R2_scaled'] + df['Ar2_scaled']
-    df['CII'] = numerator / denominator.replace(0, float('nan'))
-    
     #todo typ ropy
     features = [
         'D1_scaled', 'As1_scaled',  'S1_scaled', 'R1_scaled', 'Ar1_scaled', 
         'D2_scaled', 'As2_scaled', 'S2_scaled', 'R2_scaled', 'Ar2_scaled'
     ]
-    result_df = df[features + ['CII']]
+    result_df = df[features + [target]]
     return result_df

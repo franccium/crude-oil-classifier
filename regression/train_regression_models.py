@@ -184,7 +184,7 @@ def compare_regressors_with_gridsearch(parse_func, target_column: str, title_pre
         plt.tight_layout()
         plt.show()
         
-def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 50):
+def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 15):
     from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor, SGDRegressor
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor, BaggingRegressor
     from sklearn.tree import DecisionTreeRegressor
@@ -204,7 +204,7 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n
         ("Lasso", Lasso()),
         ("ElasticNet", ElasticNet()),
         ("BayesianRidge", BayesianRidge()),
-        #("HuberRegressor", HuberRegressor()),
+        ("HuberRegressor", HuberRegressor()),
         ("SGDRegressor", SGDRegressor(max_iter=1000, tol=1e-3)),
         ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42)),
         ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=42)),
@@ -219,7 +219,7 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n
         ("PLSRegression", PLSRegression()),
         ("LinearSVR", LinearSVR()),
         ("SVR", SVR()),
-        #("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
+        ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
     ]
 
     results = {name: {"r2": [], "rmse": []} for name, _ in regressors}
@@ -265,7 +265,7 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n
     plt.show()
 
 
-def compare_best_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 200):
+def compare_best_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 40):
     df = parse_func()
     X = df.drop(columns=[target_column])
     y = df[target_column]
@@ -278,22 +278,26 @@ def compare_best_regressors(parse_func, target_column: str, title_prefix: str = 
     from sklearn.linear_model import HuberRegressor, BayesianRidge, LinearRegression, Ridge
     from sklearn.cross_decomposition import PLSRegression
     from sklearn.neural_network import MLPRegressor
+    from sklearn.svm import SVR, LinearSVR, NuSVR
+
     regressors = [
-        ("GradientBoostingRegressor", GradientBoostingRegressor(
-            learning_rate=0.2, max_depth=2, min_samples_split=5, n_estimators=50, subsample=0.7, random_state=42)),
         ("AdaBoostRegressor", AdaBoostRegressor(
-            learning_rate=0.5, loss='exponential', n_estimators=300, random_state=42)),
-        ("HuberRegressor", HuberRegressor(
-            alpha=0.001, epsilon=2.0)),
-        ("BayesianRidge", BayesianRidge(
-            alpha_1=0.001, alpha_2=1e-06, lambda_1=1e-06, lambda_2=0.001)),
-        ("PLSRegression", PLSRegression(
-            n_components=5)),
-        ("LinearRegression", LinearRegression()),
+            learning_rate=1.0, loss='linear', n_estimators=300, random_state=42)),
         ("MLPRegressor", MLPRegressor(
-            activation='tanh', alpha=0.01, hidden_layer_sizes=(100, 50), learning_rate='constant', max_iter=1000, random_state=42)),
+            activation='relu', alpha=0.01, hidden_layer_sizes=(100, 100), learning_rate='constant', max_iter=1000, random_state=42)),
+        ("BayesianRidge", BayesianRidge(
+            alpha_1=1e-06, alpha_2=0.001, lambda_1=0.001, lambda_2=1e-06)),
         ("Ridge", Ridge(
             alpha=0.01, solver='lsqr')),
+        ("HuberRegressor", HuberRegressor(
+            alpha=0.01, epsilon=1.1)),
+        ("GradientBoostingRegressor", GradientBoostingRegressor(
+            learning_rate=0.2, max_depth=3, min_samples_split=10, n_estimators=50, subsample=1.0, random_state=42)),
+        ("LinearRegression", LinearRegression()),
+        ("PLSRegression", PLSRegression(
+            n_components=4)),
+        ("NuSVR", NuSVR(
+            C=10, kernel='rbf', nu=0.25)),
     ]
 
     results = {name: {"r2": [], "rmse": []} for name, _ in regressors}
@@ -323,7 +327,6 @@ def compare_best_regressors(parse_func, target_column: str, title_prefix: str = 
     for i, (name, r2, rmse) in enumerate(summary, 1):
         print(f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}")
 
-    # Plot best model from last run
     best_name = summary[0][0]
     best_regr = dict(regressors)[best_name]
     best_regr.fit(X_train, y_train)
@@ -370,7 +373,9 @@ def asmix_linear_regression_train():
     dfas = parse_asmix_with_density_S(y_pred)
     compare_regressors(dfas, target, target)'''
     #compare_regressors(parse_asmix_with_density, target, target)
-    compare_regressors(parse_asmix_with_density_find_CII, target, target)
+    #compare_regressors(parse_asmix_with_density_find_CII, target, target)
+    #compare_regressors_with_gridsearch(parse_asmix_with_density_find_CII, target, target)
+    compare_best_regressors(parse_asmix_with_density_find_CII, target, target)
     #compare_regressors_with_gridsearch(parse_asmix_with_density, target, target)
     #compare_best_regressors(parse_asmix_with_density, target, target)
 
