@@ -9,3 +9,7 @@ def load_sample_ids(selected_file):
             if row:
                 sample_ids.append(row[0])
     return sorted(set(sample_ids))
+
+def clear_window(window):
+    for widget in window.winfo_children():
+        widget.destroy()

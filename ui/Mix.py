@@ -9,6 +9,10 @@ class Mix:
         self.dataset = dataset
         self.sara1 = self.get_sara(id1)
         self.sara2 = self.get_sara(id2)
+        self.CII = 0.7
+        self.Svalue = 1
+        self.Pvalue = 1
+        self.predicted = "Stable"
 
     def get_sara(self, id):
         df = pd.read_csv(f"../data/{self.dataset}")
