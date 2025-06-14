@@ -8,9 +8,9 @@ from training.model_definition import models
 from training.models import ModelsTraining
 import matplotlib.pyplot as plt
 
-def load_sample_ids(selected_file):
+def load_sample_ids():
     sample_ids = []
-    with open(f"./data/{selected_file}", newline='') as csvfile:
+    with open(f"./data/{state.prediction_dataset}", newline='') as csvfile:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
@@ -80,3 +80,40 @@ def ranking():
         )
 
     plt.show()
+
+def get_text_color(header, value):
+    try:
+        value = float(value)
+    except ValueError:
+        return "black"  # default if it's not a number
+
+    if header == "CII":
+        if value < 0.7:
+            return "green"
+        elif 0.7 <= value <= 1.5:
+            return "orange"
+        else:
+            return "red"
+    elif header == "TSI":
+        if value < 1.5:
+            return "green"
+        elif 1.5 <= value <= 2.5:
+            return "orange"
+        else:
+            return "red"
+    elif header == "P-Value":
+        if value < 1.5:
+            return "red"
+        elif 1.5 <= value <= 2:
+            return "orange"
+        else:
+            return "green"
+    elif header == "S-Value":
+        if value < 1.5:
+            return "red"
+        elif 1.5 <= value <= 2.2:
+            return "orange"
+        else:
+            return "green"
+    else:
+        return "black"

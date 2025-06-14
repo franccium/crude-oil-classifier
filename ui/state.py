@@ -1,4 +1,5 @@
-selected_file = "data_original.csv"
+selected_file = None
+prediction_dataset = "data_full_51.csv"
 graph_flags = {
     'feature_space': True,
     'data_scatter': True,

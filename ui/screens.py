@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from ui.dialogs import select_dataset, select_graphs, show_loading, select_featureset, get_best_model_for_featureset, show_ranking_dialog
-from ui.utils import clear_window, load_sample_ids
+from ui.utils import clear_window, load_sample_ids, get_text_color
 import ui.state as state
 from ui.Mix import Mix
 import time
@@ -58,7 +58,7 @@ def show_ranking_screen():
     )
 
 def show_sample_selection():
-    sample_ids = load_sample_ids(state.selected_file)
+    sample_ids = load_sample_ids()
 
     clear_window(state.root)
     state.root.title("Select Samples")
@@ -115,7 +115,7 @@ def show_sample_selection():
 
         def background_task():
             try:
-                mix_result = Mix(s1, s2, v1, v2, state.selected_file)
+                mix_result = Mix(s1, s2, v1, v2)
                 # after creating mix, we can call functions from mix which will predict values
                 print("Selected graphs:", state.graph_flags)
                 print(
@@ -206,6 +206,10 @@ def show_result_screen():
     for col, value in enumerate(values):
         value_cell = tk.Frame(table_frame, bg="white", padx=10, pady=8)
         value_cell.grid(row=1, column=col, sticky="nsew", padx=1, pady=1)
-        tk.Label(value_cell, text=value, font=("Helvetica", 11), bg="white").pack(fill="both", expand=True)
+
+        header = headers[col]  # Match value to its header
+        fg_color = get_text_color(header, value)
+
+        tk.Label(value_cell, text=value, font=("Helvetica", 11), bg="white", fg=fg_color).pack(fill="both", expand=True)
 
     ttk.Button(state.root, text="Back", command=show_main_screen).grid(row=3, column=0, pady=20)
