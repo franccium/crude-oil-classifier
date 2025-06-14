@@ -184,7 +184,7 @@ def compare_regressors_with_gridsearch(parse_func, target_column: str, title_pre
         plt.tight_layout()
         plt.show()
         
-def compare_regressors(parse_func, target_column: str, title_prefix: str = ""):
+def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 50):
     from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor, SGDRegressor
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor, BaggingRegressor
     from sklearn.tree import DecisionTreeRegressor
@@ -197,7 +197,6 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = ""):
     df = parse_func()
     X = df.drop(columns=[target_column])
     y = df[target_column]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     regressors = [
         ("LinearRegression", LinearRegression()),
@@ -205,7 +204,7 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = ""):
         ("Lasso", Lasso()),
         ("ElasticNet", ElasticNet()),
         ("BayesianRidge", BayesianRidge()),
-        ("HuberRegressor", HuberRegressor()),
+        #("HuberRegressor", HuberRegressor()),
         ("SGDRegressor", SGDRegressor(max_iter=1000, tol=1e-3)),
         ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42)),
         ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=42)),
@@ -220,28 +219,37 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = ""):
         ("PLSRegression", PLSRegression()),
         ("LinearSVR", LinearSVR()),
         ("SVR", SVR()),
-        ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
+        #("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
     ]
 
-    results = []
-    for name, regr in regressors:
-        try:
-            regr.fit(X_train, y_train)
-            y_pred = regr.predict(X_test)
-            print(y_pred)
-            r2 = r2_score(y_test, y_pred)
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-            results.append((name, r2, rmse))
-            print(f"{name}: Test R^2 = {r2:.4f}, RMSE = {rmse:.4f}")
-        except Exception as e:
-            print(f"{name}: Failed with error: {e}")
+    results = {name: {"r2": [], "rmse": []} for name, _ in regressors}
 
-    results.sort(key=lambda x: x[1], reverse=True)
-    print("\n====== Model Ranking by Test R^2 ======")
-    for i, (name, r2, rmse) in enumerate(results, 1):
-        print(f"{i}. {name}: R^2 = {r2:.4f}, RMSE = {rmse:.4f}")
+    for run in range(n_runs):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=run)
+        for name, regr in regressors:
+            try:
+                regr.fit(X_train, y_train)
+                y_pred = regr.predict(X_test)
+                r2 = r2_score(y_test, y_pred)
+                rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+                results[name]["r2"].append(r2)
+                results[name]["rmse"].append(rmse)
+            except Exception:
+                continue
 
-    best_name, _, _ = results[0]
+    summary = []
+    for name in results:
+        r2_mean = np.mean(results[name]["r2"])
+        rmse_mean = np.mean(results[name]["rmse"])
+        summary.append((name, r2_mean, rmse_mean))
+        print(f"{name}: Mean Test R^2 = {r2_mean:.4f}, Mean RMSE = {rmse_mean:.4f}")
+
+    summary.sort(key=lambda x: x[1], reverse=True)
+    print("\n====== Model Ranking by Mean Test R^2 ======")
+    for i, (name, r2, rmse) in enumerate(summary, 1):
+        print(f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}")
+
+    best_name = summary[0][0]
     best_regr = dict(regressors)[best_name]
     best_regr.fit(X_train, y_train)
     y_pred = best_regr.predict(X_test)
@@ -250,7 +258,82 @@ def compare_regressors(parse_func, target_column: str, title_prefix: str = ""):
     plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
     plt.xlabel(f'Actual {target_column}')
     plt.ylabel(f'Predicted {target_column}')
-    plt.title(f'{title_prefix} {best_name}: Actual vs Predicted')
+    plt.title(f'{title_prefix} {best_name}: Actual vs Predicted (Last Run)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def compare_best_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 200):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+    
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import r2_score, mean_squared_error
+    from sklearn.ensemble import GradientBoostingRegressor, AdaBoostRegressor
+    from sklearn.linear_model import HuberRegressor, BayesianRidge, LinearRegression, Ridge
+    from sklearn.cross_decomposition import PLSRegression
+    from sklearn.neural_network import MLPRegressor
+    regressors = [
+        ("GradientBoostingRegressor", GradientBoostingRegressor(
+            learning_rate=0.2, max_depth=2, min_samples_split=5, n_estimators=50, subsample=0.7, random_state=42)),
+        ("AdaBoostRegressor", AdaBoostRegressor(
+            learning_rate=0.5, loss='exponential', n_estimators=300, random_state=42)),
+        ("HuberRegressor", HuberRegressor(
+            alpha=0.001, epsilon=2.0)),
+        ("BayesianRidge", BayesianRidge(
+            alpha_1=0.001, alpha_2=1e-06, lambda_1=1e-06, lambda_2=0.001)),
+        ("PLSRegression", PLSRegression(
+            n_components=5)),
+        ("LinearRegression", LinearRegression()),
+        ("MLPRegressor", MLPRegressor(
+            activation='tanh', alpha=0.01, hidden_layer_sizes=(100, 50), learning_rate='constant', max_iter=1000, random_state=42)),
+        ("Ridge", Ridge(
+            alpha=0.01, solver='lsqr')),
+    ]
+
+    results = {name: {"r2": [], "rmse": []} for name, _ in regressors}
+
+    for run in range(n_runs):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=run)
+        for name, regr in regressors:
+            try:
+                regr.fit(X_train, y_train)
+                y_pred = regr.predict(X_test)
+                r2 = r2_score(y_test, y_pred)
+                rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+                results[name]["r2"].append(r2)
+                results[name]["rmse"].append(rmse)
+            except Exception:
+                continue
+
+    summary = []
+    for name in results:
+        r2_mean = np.mean(results[name]["r2"])
+        rmse_mean = np.mean(results[name]["rmse"])
+        summary.append((name, r2_mean, rmse_mean))
+        print(f"{name}: Mean Test R^2 = {r2_mean:.4f}, Mean RMSE = {rmse_mean:.4f}")
+
+    summary.sort(key=lambda x: x[1], reverse=True)
+    print("\n====== Model Ranking by Mean Test R^2 ======")
+    for i, (name, r2, rmse) in enumerate(summary, 1):
+        print(f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}")
+
+    # Plot best model from last run
+    best_name = summary[0][0]
+    best_regr = dict(regressors)[best_name]
+    best_regr.fit(X_train, y_train)
+    y_pred = best_regr.predict(X_test)
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
+    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
+    plt.xlabel(f'Actual {target_column}')
+    plt.ylabel(f'Predicted {target_column}')
+    plt.title(f'{title_prefix} {best_name}: Actual vs Predicted (Last Run)')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
@@ -266,9 +349,30 @@ def tsi_value_linear_regression_train():
     linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
     
 def asmix_linear_regression_train():
-    from utils.parsers import parse_asmix
+    from utils.parsers import parse_asmix, parse_asmix_with_density, parse_asmix_with_density_find_CII
     #linear_regression_train(parse_asmix, 'AsMix', 'AsMix')
-    compare_regressors(parse_asmix, 'AsMix', 'AsMix')
+    #compare_regressors(parse_asmix, 'AsMix', 'AsMix')
+    target = 'AsMix'
+    target = 'CII'
+    '''
+    df = parse_asmix_with_density()
+    X = df.drop(columns=['SMix'])
+    y = df['SMix']
+    regr = LinearRegression()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    regr.fit(X_train, y_train)
+    y_pred = regr.predict(X_test)
+    r2 = r2_score(y_test, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    print(r2)
+    print(rmse)
+    
+    dfas = parse_asmix_with_density_S(y_pred)
+    compare_regressors(dfas, target, target)'''
+    #compare_regressors(parse_asmix_with_density, target, target)
+    compare_regressors(parse_asmix_with_density_find_CII, target, target)
+    #compare_regressors_with_gridsearch(parse_asmix_with_density, target, target)
+    #compare_best_regressors(parse_asmix_with_density, target, target)
 
 def s_value_linear_regression_train():
     #compare_regressors_with_gridsearch(parse_s_value, 'S_Value_res', 'S')
