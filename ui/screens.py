@@ -1,28 +1,61 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from dialogs import select_dataset, select_graphs, show_loading
-from utils import clear_window, load_sample_ids
-import state
-from Mix import Mix
+from ui.dialogs import select_dataset, select_graphs, show_loading, select_featureset, get_best_model_for_featureset, show_ranking_dialog
+from ui.utils import clear_window, load_sample_ids
+import ui.state as state
+from ui.Mix import Mix
 import time
 import threading
 
 def show_main_screen():
     clear_window(state.root)
     state.root.title("Oil Classifier App")
-
     state.root.grid_rowconfigure(0, weight=1)
     state.root.grid_rowconfigure(1, weight=1)
-    state.root.grid_rowconfigure(2, weight=1)
-    state.root.grid_rowconfigure(3, weight=3)
     state.root.grid_columnconfigure(0, weight=1)
+    state.root.grid_columnconfigure(1, weight=0)
 
-    tk.Label(state.root, text="Welcome to the Oil Classifier", font=("Helvetica", 16)).grid(row=0, column=0, pady=20, sticky="n")
+    tk.Button(state.root, text="Model ranking", width=20, command=show_ranking_screen).grid(
+        row=0, column=0, pady=70, padx=100, sticky="nsew"
+    )
+    tk.Button(state.root, text="Samples mixing", width=20, command=show_sample_selection).grid(
+        row=1, column=0, pady=70, padx=100, sticky="nsew"
+    )
 
-    tk.Button(state.root, text="Select Dataset", width=20, command=lambda: select_dataset()).grid(row=1, column=0, pady=5, sticky="n")
-    tk.Button(state.root, text="Select Graphs Options", width=20, command=lambda: select_graphs()).grid(row=2, column=0, pady=5, sticky="n")
-    tk.Button(state.root, text="Next", width=20, command=go_next).grid(row=3, column=0, pady=20, sticky="n")
+def show_ranking_screen():
+    print("here")
+    clear_window(state.root)
+    state.root.title("Oil Classifier Ranking")
+
+    for i in range(6):
+        state.root.grid_rowconfigure(i, weight=1)
+    state.root.grid_columnconfigure(0, weight=1)
+    state.root.grid_columnconfigure(1, weight=1)
+
+    tk.Label(state.root, text="Welcome to the Oil Classifier", font=("Helvetica", 16)).grid(
+        row=0, column=0, columnspan=2, pady=20, sticky="n"
+    )
+
+    tk.Button(state.root, text="Select Dataset", width=20, command=select_dataset).grid(
+        row=1, column=0, columnspan=2, pady=5, padx=60, sticky="nsew"
+    )
+    tk.Button(state.root, text="Select Graphs Options", width=20, command=select_graphs).grid(
+        row=2, column=0, columnspan=2, pady=5, padx=60,sticky="nsew"
+    )
+    tk.Button(state.root, text="Select featureset", width=20, command=select_featureset).grid(
+        row=3, column=0, columnspan=2, pady=5, padx=60,sticky="nsew"
+    )
+    tk.Button(state.root, text="Select model", width=20, command=get_best_model_for_featureset).grid(
+        row=4, column=0, columnspan=2, pady=5, padx=60,sticky="nsew"
+    )
+
+    tk.Button(state.root, text="Back", width=20, command=show_main_screen).grid(
+        row=5, column=0, pady=20, padx=60,sticky="nsew"
+    )
+    tk.Button(state.root, text="Next", width=20, command=go_next_ranking).grid(
+        row=5, column=1, pady=20, padx=60,sticky="nsew"
+    )
 
 def show_sample_selection():
     sample_ids = load_sample_ids(state.selected_file)
@@ -82,7 +115,6 @@ def show_sample_selection():
 
         def background_task():
             try:
-                time.sleep(3)
                 mix_result = Mix(s1, s2, v1, v2, state.selected_file)
                 # after creating mix, we can call functions from mix which will predict values
                 print("Selected graphs:", state.graph_flags)
@@ -90,6 +122,7 @@ def show_sample_selection():
                     f"Selected mix from samples: {mix_result.id1} and {mix_result.id2}. In ratio: {mix_result.v1}:{mix_result.v2}.")
                 print(f"Sara of sample 1: {mix_result.id1}: {mix_result.sara1}. ")
                 print(f"Sara of sample 2: {mix_result.id2}: {mix_result.sara2}. ")
+                print(f"Best model for featureset: {state.best_model}")
 
                 def on_done():
                     state.mix = mix_result
@@ -99,7 +132,7 @@ def show_sample_selection():
                 state.root.after(0, on_done)
 
             except Exception as e:
-                def show_error():
+                def show_error(e=e):
                     loading.destroy()
                     messagebox.showerror("Error", f"Failed to create mix:\n{e}")
 
@@ -110,18 +143,29 @@ def show_sample_selection():
     def go_back():
         show_main_screen()
 
-def go_next():
-    if not state.selected_file:
-        messagebox.showwarning("Missing dataset", "Please select a dataset first.")
+def go_next_ranking():
+    if not state.selected_file or not state.featureset or not state.best_model:
+        messagebox.showwarning("Missing option", "Please select from all options before proceeding.")
         return
-    show_sample_selection()
+    show_ranking_dialog()
 
 def show_result_screen():
     clear_window(state.root)
     state.root.title("Results")
     state.root.configure(bg="#f5f5f5")
 
+    for i in range(4):
+        state.root.grid_rowconfigure(i, weight=1)
+    state.root.grid_columnconfigure(0, weight=1)
+
+
     mix = state.mix
+
+    type_color = {
+        "light": "green",
+        "medium": "orange",
+        "heavy": "red"
+    }
 
     header_frame = ttk.Frame(state.root, padding=20)
     header_frame.grid(row=0, column=0, sticky="ew")
@@ -132,12 +176,21 @@ def show_result_screen():
     ttk.Label(header_frame, text=f"Sample ID2: {mix.id2} ({mix.v2}%)",
               font=("Helvetica", 12)).grid(row=0, column=1, sticky="w", padx=10)
 
+    ttk.Label(header_frame, text=mix.type1, font=("Helvetica", 12, "bold"),
+              foreground=type_color.get(mix.type1, "black")
+    ).grid(row=2, column=0, sticky="e", padx=10)
+
+    ttk.Label(header_frame, text=mix.type2, font=("Helvetica", 12, "bold"),
+        foreground=type_color.get(mix.type2, "black")
+    ).grid(row=2, column=1, sticky="w", padx=10)
+
+
     ttk.Label(state.root, text=f"Predicted Stability: {mix.predicted}",
               font=("Helvetica", 13, "bold"), foreground="#2b7a0b").grid(row=1, column=0, pady=(10, 20))
 
 
-    headers = ["CII", "S-Value", "P-Value"]
-    values = [str(mix.CII), str(mix.Svalue), str(mix.Pvalue)]
+    headers = ["CII", "S-Value", "P-Value", "TSI"]
+    values = [str(mix.CII), str(mix.Svalue), str(mix.Pvalue), str(mix.TSI)]
 
     table_frame = tk.Frame(state.root, bg="white", highlightbackground="#cccccc", highlightthickness=1)
     table_frame.grid(row=2, column=0, pady=10, padx=20)

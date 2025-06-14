@@ -1,6 +1,6 @@
 import tkinter as tk
-from screens import show_main_screen
-import state
+from ui.screens import show_main_screen
+import ui.state as state
 
 def main():
     root = tk.Tk()
