@@ -344,8 +344,8 @@ def compare_best_regressors(parse_func, target_column: str, title_prefix: str = 
     
 def p_value_linear_regression_train():
     #linear_regression_train(parse_p_value, 'P_Value_res', 'P')
-    #compare_regressors(parse_p_value, 'P_Value_res', 'P')
-    compare_regressors_with_gridsearch(parse_p_value, 'P_Value_res', 'P')
+    compare_regressors(parse_p_value, 'P_Value_res', 'P')
+    #compare_regressors_with_gridsearch(parse_p_value, 'P_Value_res', 'P')
 
 def tsi_value_linear_regression_train():
     #compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
@@ -353,25 +353,9 @@ def tsi_value_linear_regression_train():
     
 def asmix_linear_regression_train():
     from utils.parsers import parse_asmix, parse_asmix_with_density, parse_asmix_with_density_find_CII
-    #linear_regression_train(parse_asmix, 'AsMix', 'AsMix')
-    #compare_regressors(parse_asmix, 'AsMix', 'AsMix')
     target = 'AsMix'
     target = 'CII'
-    '''
-    df = parse_asmix_with_density()
-    X = df.drop(columns=['SMix'])
-    y = df['SMix']
-    regr = LinearRegression()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    regr.fit(X_train, y_train)
-    y_pred = regr.predict(X_test)
-    r2 = r2_score(y_test, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-    print(r2)
-    print(rmse)
     
-    dfas = parse_asmix_with_density_S(y_pred)
-    compare_regressors(dfas, target, target)'''
     #compare_regressors(parse_asmix_with_density, target, target)
     #compare_regressors(parse_asmix_with_density_find_CII, target, target)
     #compare_regressors_with_gridsearch(parse_asmix_with_density_find_CII, target, target)
@@ -381,7 +365,7 @@ def asmix_linear_regression_train():
 
 def s_value_linear_regression_train():
     #compare_regressors_with_gridsearch(parse_s_value, 'S_Value_res', 'S')
-    compare_regressors(parse_s_value, 'S_Value_res', 'S')
+    #compare_regressors(parse_s_value, 'S_Value_res', 'S')
     df = parse_tsi_value()
     print(df.head())
     df = parse_s_value('s_value.csv')

@@ -46,13 +46,15 @@ def parse_tsi_value(filename='tsi_value.csv'):
 
     return result_df
 
-def parse_p_value(filename='p_value.csv'):
+def parse_p_value(filename='p_value_with_As.csv'):
     file = os.path.join("data", filename)
     df = pd.read_csv(file)
     df['P_Value_part1'] = df['P_Value1'] * (df['%_1'] / 100)
     df['P_Value_part2'] = df['P_Value2'] * (df['%_2'] / 100)
-
-    result_df = df[['P_Value_part1', 'P_Value_part2', 'P_Value_res']]
+    df['As1_scaled'] = df['As1'] * (df['%_1'] / 100)
+    df['As2_scaled'] = df['As2'] * (df['%_2'] / 100)
+    
+    result_df = df[['P_Value_part1', 'As1_scaled', 'P_Value_part2', 'As2_scaled', 'P_Value_res']]
 
     return result_df
 
