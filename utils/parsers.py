@@ -35,12 +35,12 @@ def parse_s_value(filename='s_value_As_types_s.csv'):
     dfa = augment_data(df, columns_to_augment, 3, 35, 0.05)
     df = pd.concat([dfa, df])
     
-    df['S_Value_part1'] = df['S_Value1'] * (df['%_1'] / 100)
-    df['S_Value_part2'] = df['S_Value2'] * (df['%_2'] / 100)
-    df['As1_scaled'] = df['As1'] * (df['%_1'] / 100)
-    df['As2_scaled'] = df['As2'] * (df['%_2'] / 100)
-    df['S1_scaled'] = df['S1'] * (df['%_1'] / 100)
-    df['S2_scaled'] = df['S2'] * (df['%_2'] / 100)
+    df['S_Value_part1'] = df['S_Value1'] * (df['%_1'])
+    df['S_Value_part2'] = df['S_Value2'] * (df['%_2'])
+    df['As1_scaled'] = df['As1'] * (df['%_1'])
+    df['As2_scaled'] = df['As2'] * (df['%_2'])
+    df['S1_scaled'] = df['S1'] * (df['%_1'])
+    df['S2_scaled'] = df['S2'] * (df['%_2'])
 
     result_df = df[['S_Value_part1', 'S_Value_part2', 'S_Value_res', 'As1_scaled', 'As2_scaled']]
 
@@ -55,14 +55,14 @@ def parse_tsi_value(filename='tsi_value_with_As_Density.csv'):
     dfa = augment_data(df, columns_to_augment, 3, 35, 0.05)
     df = pd.concat([dfa, df])
     
-    df['TSI_Value_part1'] = df['TSI_Value1'] * (df['%_1'] / 100)
-    df['TSI_Value_part2'] = df['TSI_Value2'] * (df['%_2'] / 100)
-    df['As1_scaled'] = df['As1'] * (df['%_1'] / 100)
-    df['As2_scaled'] = df['As2'] * (df['%_2'] / 100)
-    df['D1_scaled'] = df['D1'] * (df['%_1'] / 100)
-    df['D2_scaled'] = df['D2'] * (df['%_2'] / 100)
+    df['TSI_Value_part1'] = df['TSI_Value1'] * (df['%_1'])
+    df['TSI_Value_part2'] = df['TSI_Value2'] * (df['%_2'])
+    df['As1_scaled'] = df['As1'] * (df['%_1'])
+    df['As2_scaled'] = df['As2'] * (df['%_2'])
+    df['D1_scaled'] = df['D1'] * (df['%_1'])
+    df['D2_scaled'] = df['D2'] * (df['%_2'])
     
-    result_df = df[['TSI_Value_part1', 'TSI_Value_part2', 'TSI_Value_res', 'D1_scaled', 'D2_scaled']]
+    result_df = df[['TSI_Value_part1', 'TSI_Value_part2', 'TSI_Value_res', 'D1_scaled', 'D2_scaled', 'As1_scaled', 'As2_scaled']]
 
     return result_df
 
@@ -72,15 +72,17 @@ def parse_p_value(filename='p_value_with_As_Density.csv'):
     
     from utils.augmentation import augment_data
     columns_to_augment = ['P_Value1', 'P_Value2', 'As1', 'As2', '%_1', '%_2', 'P_Value_res', 'D1', 'D2']
+    dfa = augment_data(df, columns_to_augment, 3, 35, 0.03)
+    df = pd.concat([dfa, df])
     
-    df['P_Value_part1'] = df['P_Value1'] * (df['%_1'] / 100)
-    df['P_Value_part2'] = df['P_Value2'] * (df['%_2'] / 100)
-    df['As1_scaled'] = df['As1'] * (df['%_1'] / 100)
-    df['As2_scaled'] = df['As2'] * (df['%_2'] / 100)
-    df['D1_scaled'] = df['D1'] * (df['%_1'] / 100)
-    df['D2_scaled'] = df['D2'] * (df['%_2'] / 100)
+    df['P_Value_part1'] = df['P_Value1'] * (df['%_1'])
+    df['P_Value_part2'] = df['P_Value2'] * (df['%_2'])
+    df['As1_scaled'] = df['As1'] * (df['%_1'])
+    df['As2_scaled'] = df['As2'] * (df['%_2'])
+    df['D1_scaled'] = df['D1'] * (df['%_1'])
+    df['D2_scaled'] = df['D2'] * (df['%_2'])
     
-    result_df = df[['P_Value_part1', 'P_Value_part2', 'P_Value_res']]
+    result_df = df[['P_Value_part1', 'P_Value_part2', 'P_Value_res', 'As1_scaled', 'As2_scaled', 'D1_scaled', 'D2_scaled']]
 
     return result_df
 
@@ -166,22 +168,22 @@ def parse_asmix_with_density_find_CII(filename='mieszaniny_sara_types_appended.c
     dfa = augment_data(df, columns_to_augment, 3, 15, 0.05)
     df = pd.concat([dfa, df])
     
-    df['D1_scaled'] = df['D1'] * (df['%1'] / 100)
-    df['D2_scaled'] = df['D2'] * (df['%2'] / 100)
+    df['D1_scaled'] = df['D1'] * (df['%1'])
+    df['D2_scaled'] = df['D2'] * (df['%2'])
     
-    df['S1_scaled'] = df['S1'] * (df['%1'] / 100)
-    df['Ar1_scaled'] = df['Ar1'] * (df['%1'] / 100)
-    df['R1_scaled'] = df['R1'] * (df['%1'] / 100)
-    df['As1_scaled'] = df['As1'] * (df['%1'] / 100)
-    df['S2_scaled'] = df['S2'] * (df['%2'] / 100)
-    df['Ar2_scaled'] = df['Ar2'] * (df['%2'] / 100)
-    df['R2_scaled'] = df['R2'] * (df['%2'] / 100)
-    df['As2_scaled'] = df['As2'] * (df['%2'] / 100)
+    df['S1_scaled'] = df['S1'] * (df['%1'])
+    df['Ar1_scaled'] = df['Ar1'] * (df['%1'])
+    df['R1_scaled'] = df['R1'] * (df['%1'])
+    df['As1_scaled'] = df['As1'] * (df['%1'])
+    df['S2_scaled'] = df['S2'] * (df['%2'])
+    df['Ar2_scaled'] = df['Ar2'] * (df['%2'])
+    df['R2_scaled'] = df['R2'] * (df['%2'])
+    df['As2_scaled'] = df['As2'] * (df['%2'])
     
     #todo typ ropy
     features = [
-        'D1_scaled', 'As1_scaled',  'S1_scaled', 'R1_scaled', 'Ar1_scaled', 'Type1',
-        'D2_scaled', 'As2_scaled', 'S2_scaled', 'R2_scaled', 'Ar2_scaled', 'Type2'
+        'D1_scaled', 'As1_scaled',  'S1_scaled', 'R1_scaled', 'Ar1_scaled',
+        'D2_scaled', 'As2_scaled', 'S2_scaled', 'R2_scaled', 'Ar2_scaled',
     ]
     result_df = df[features + [target]]
     return result_df

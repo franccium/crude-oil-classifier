@@ -330,15 +330,15 @@ def tune_top_regressors(parse_func, target_column: str, cv_folds: int = 5, n_rep
             "min_samples_split": [2, 5, 10]
         },
         "AdaBoostRegressor": {
-            "n_estimators": [50, 100, 200, 300],
+            "n_estimators": [50, 100],
             "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.5, 1.0],
             "loss": ["linear", "square", "exponential"]
         },
         "ExtraTreesRegressor": {
             #"n_estimators": [50, 100, 200, 300],
             "n_estimators": [50, 100],
-            "max_depth": [None, 4, 8, 12],
-            "min_samples_split": [2, 5, 10],
+            "max_depth": [None, 4, 8],
+            "min_samples_split": [2, 5, 8],
             "min_samples_leaf": [1, 2, 4]
         }
     }
@@ -357,7 +357,7 @@ def tune_top_regressors(parse_func, target_column: str, cv_folds: int = 5, n_rep
             scoring='r2',
             cv=rkf,
             n_jobs=-1,
-            verbose=2
+            verbose=0
         )
         grid.fit(X, y)
         print(f"Best R^2: {grid.best_score_:.4f}")
@@ -392,7 +392,6 @@ def compare_regressors_repeated_cv(parse_func, target_column: str, title_prefix:
         ("ElasticNet", ElasticNet()),
         ("BayesianRidge", BayesianRidge()),
         ("HuberRegressor", HuberRegressor()),
-        ("SGDRegressor", SGDRegressor(max_iter=1000, tol=1e-3)),
         ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42)),
         ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=42)),
         ("ExtraTreesRegressor", ExtraTreesRegressor(n_estimators=100, random_state=42)),
@@ -525,39 +524,369 @@ def compare_best_regressors(parse_func, target_column: str, title_prefix: str = 
     plt.tight_layout()
     plt.show()
     
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.model_selection import RepeatedKFold, cross_val_score
+import numpy as np
+
+def repeated_cv_extratrees(parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 10):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    model = ExtraTreesRegressor(
+        max_depth=8,
+        min_samples_leaf=1,
+        min_samples_split=2,
+        n_estimators=100,
+        random_state=42
+    )
+
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+
+    r2_scores = cross_val_score(model, X, y, cv=rkf, scoring='r2', n_jobs=-1)
+    neg_mse_scores = cross_val_score(model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
+    rmse_scores = np.sqrt(-neg_mse_scores)
+
+    print(f"ExtraTreesRegressor (Repeated CV):")
+    print(f"Mean R^2: {np.mean(r2_scores):.4f} ± {np.std(r2_scores):.4f}")
+    print(f"Mean RMSE: {np.mean(rmse_scores):.4f} ± {np.std(rmse_scores):.4f}")
+
+    # Plot R^2 scores distribution
+    plt.figure(figsize=(8, 4))
+    plt.hist(r2_scores, bins=15, color='skyblue', edgecolor='k')
+    plt.title('Distribution of R² Scores (Repeated CV)')
+    plt.xlabel('R² Score')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # Plot RMSE scores distribution
+    plt.figure(figsize=(8, 4))
+    plt.hist(rmse_scores, bins=15, color='salmon', edgecolor='k')
+    plt.title('Distribution of RMSE Scores (Repeated CV)')
+    plt.xlabel('RMSE')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # Fit on all data and plot predicted vs actual
+    model.fit(X, y)
+    y_pred = model.predict(X)
+    plt.figure(figsize=(6, 6))
+    plt.scatter(y, y_pred, alpha=0.6, color='blue', label='Predicted vs Actual')
+    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
+    plt.xlabel('Actual')
+    plt.ylabel('Predicted')
+    plt.title('ExtraTreesRegressor: Actual vs Predicted (All Data)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # Plot error histogram
+    errors = y - y_pred
+    plt.figure(figsize=(8, 4))
+    plt.hist(errors, bins=30, color='purple', alpha=0.7)
+    plt.xlabel('Prediction Error (y_true - y_pred)')
+    plt.ylabel('Frequency')
+    plt.title('Prediction Error Histogram (All Data)')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    
+def repeated_cv_model(model, parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 10):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+
+    r2_scores = cross_val_score(model, X, y, cv=rkf, scoring='r2', n_jobs=-1)
+    neg_mse_scores = cross_val_score(model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
+    rmse_scores = np.sqrt(-neg_mse_scores)
+
+    print(f"ExtraTreesRegressor (Repeated CV):")
+    print(f"Mean R^2: {np.mean(r2_scores):.4f} ± {np.std(r2_scores):.4f}")
+    print(f"Mean RMSE: {np.mean(rmse_scores):.4f} ± {np.std(rmse_scores):.4f}")
+
+    # Plot R^2 scores distribution
+    plt.figure(figsize=(8, 4))
+    plt.hist(r2_scores, bins=15, color='skyblue', edgecolor='k')
+    plt.title('Distribution of R² Scores (Repeated CV)')
+    plt.xlabel('R² Score')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # Plot RMSE scores distribution
+    plt.figure(figsize=(8, 4))
+    plt.hist(rmse_scores, bins=15, color='salmon', edgecolor='k')
+    plt.title('Distribution of RMSE Scores (Repeated CV)')
+    plt.xlabel('RMSE')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # Fit on all data and plot predicted vs actual
+    model.fit(X, y)
+    y_pred = model.predict(X)
+    plt.figure(figsize=(6, 6))
+    plt.scatter(y, y_pred, alpha=0.6, color='blue', label='Predicted vs Actual')
+    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
+    plt.xlabel('Actual')
+    plt.ylabel('Predicted')
+    plt.title('ExtraTreesRegressor: Actual vs Predicted (All Data)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # Plot error histogram
+    errors = y - y_pred
+    plt.figure(figsize=(8, 4))
+    plt.hist(errors, bins=30, color='purple', alpha=0.7)
+    plt.xlabel('Prediction Error (y_true - y_pred)')
+    plt.ylabel('Frequency')
+    plt.title('Prediction Error Histogram (All Data)')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    
+from sklearn.model_selection import GridSearchCV, RepeatedKFold
+from sklearn.svm import NuSVR, SVR
+from sklearn.ensemble import GradientBoostingRegressor, ExtraTreesRegressor, RandomForestRegressor
+import numpy as np
+
+def quick_hyperparam_search(parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 3):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+
+    param_grids = {
+        "NuSVR": {
+            "C": [1, 10],
+            "nu": [0.25, 0.5],
+            "kernel": ["rbf", "linear"]
+        },
+        "SVR": {
+            "C": [1, 10],
+            "kernel": ["rbf", "linear"]
+        },
+        "GradientBoostingRegressor": {
+            "n_estimators": [50, 100],
+            "learning_rate": [0.05, 0.1, 0.2],
+            "max_depth": [2, 3]
+        },
+        "ExtraTreesRegressor": {
+            "n_estimators": [50, 100],
+            "max_depth": [None, 4, 8]
+        },
+        "RandomForestRegressor": {
+            "n_estimators": [50, 100],
+            "max_depth": [None, 4, 8]
+        }
+    }
+
+    regressors = {
+        "NuSVR": NuSVR(),
+        "SVR": SVR(),
+        "GradientBoostingRegressor": GradientBoostingRegressor(random_state=42),
+        "ExtraTreesRegressor": ExtraTreesRegressor(random_state=42),
+        "RandomForestRegressor": RandomForestRegressor(random_state=42)
+    }
+
+    for name in regressors:
+        print(f"\nTuning {name}...")
+        grid = GridSearchCV(
+            regressors[name],
+            param_grids[name],
+            scoring='r2',
+            cv=rkf,
+            n_jobs=-1,
+            verbose=1
+        )
+        grid.fit(X, y)
+        print(f"Best R^2: {grid.best_score_:.4f}")
+        print(f"Best Params: {grid.best_params_}")
+
+        # Optionally, also print RMSE for best estimator
+        from sklearn.model_selection import cross_val_score
+        best_model = grid.best_estimator_
+        neg_mse = cross_val_score(best_model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
+        rmse = np.sqrt(-neg_mse)
+        print(f"Best RMSE (mean ± std): {rmse.mean():.4f} ± {rmse.std():.4f}")    
+
+def train_and_export(model, parse_func, target_column: str, name: str = "model.pkl"):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    model.fit(X, y)
+    model_path = os.join("models", name)
+    joblib.dump(model, model_path)
+    print(f"Model exported to {model_path}")
+
+def export_ensemble_nusvr(parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=42)
+    ensemble = []
+    for i, (train_idx, _) in enumerate(rkf.split(X)):
+        if i >= n_models:
+            break
+        model = NuSVR(C=1, kernel='rbf', nu=0.5)
+        model.fit(X.iloc[train_idx], y.iloc[train_idx])
+        ensemble.append(model)
+    path = os.path.join("models", name)
+    joblib.dump(ensemble, path)
+    print(f"Ensemble of {n_models} NuSVR models exported to {path}")
+    
+def export_ensemble_tree(parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+    from sklearn.ensemble import ExtraTreesRegressor
+
+    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=42)
+    ensemble = []
+    for i, (train_idx, _) in enumerate(rkf.split(X)):
+        if i >= n_models:
+            break
+        """
+        model = ExtraTreesRegressor( this for TSI
+            max_depth=8,
+            min_samples_leaf=1,
+            min_samples_split=5,
+            n_estimators=50
+        )"""
+        model = ExtraTreesRegressor(
+            max_depth=8,
+            min_samples_leaf=1,
+            min_samples_split=2,
+            n_estimators=100
+        )
+        model.fit(X.iloc[train_idx], y.iloc[train_idx])
+        ensemble.append(model)
+    path = os.path.join("models", name)
+    joblib.dump(ensemble, path)
+    print(f"Ensemble of {n_models} NuSVR models exported to {path}")
+
 def p_value_linear_regression_train():
     #linear_regression_train(parse_p_value, 'P_Value_res', 'P')
     #compare_regressors(parse_p_value, 'P_Value_res', 'P')
-    #compare_regressors_repeated_cv(parse_p_value, 'P_Value_res', 'P', cv_folds=5, n_repeats=20)
-    tune_top_regressors(parse_p_value, 'P_Value_res', cv_folds=5, n_repeats=20)
+    #compare_regressors_repeated_cv(parse_p_value, 'P_Value_res', 'P', cv_folds=5, n_repeats=60)
+    #repeated_cv_extratrees(parse_p_value, 'P_Value_res', cv_folds=5, n_repeats=60) #! its a good model
+    #tune_top_regressors(parse_p_value, 'P_Value_res', cv_folds=5, n_repeats=30)
     #compare_regressors_with_gridsearch(parse_p_value, 'P_Value_res', 'P')
+    export_ensemble_tree(parse_tsi_value, 'TSI_Value_res', n_models=5, name='p_value_ensemble.pkl')
 
 def tsi_value_linear_regression_train():
     #compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
-    tune_top_regressors(parse_tsi_value, 'TSI_Value_res', cv_folds=5, n_repeats=20)
-    #compare_regressors_repeated_cv(parse_tsi_value, 'TSI_Value_res', 'TSI', cv_folds=5, n_repeats=20)
+    #tune_top_regressors(parse_tsi_value, 'TSI_Value_res', cv_folds=5, n_repeats=40)
+    compare_regressors_repeated_cv(parse_tsi_value, 'TSI_Value_res', 'TSI', cv_folds=5, n_repeats=60)
     #linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
+    #export_ensemble_tree(parse_tsi_value, 'TSI_Value_res', n_models=5, name='tsi_value_ensemble.pkl')
     
+def what():
+    import joblib
+    df = pd.read_csv(f"./data/data_extended_stability.csv")
+    ensemble = joblib.load("models/asmix_nusvr_ensemble.pkl")
+
+    print(df)
+    sample1 = df[df['Sample ID'] == 'RO']
+    sample2 = df[df['Sample ID'] == 'EF']
+
+    sample1 = sample1.drop(columns=['Sample ID', 'Stability Classification', 'CII'])
+    sample1 = sample1 * 0.90 / 100
+
+    sample2 = sample2.drop(columns=['Sample ID', 'Stability Classification', 'CII'])
+    sample2 = sample2 * 0.10 / 100
+
+    sample1 = sample1[['Density', 'As', 'S', 'R', 'Ar']]
+    sample2 = sample2[['Density', 'As', 'S', 'R', 'Ar']]
+    
+    print(sample1)
+    print(sample2)
+
+    X = pd.concat([sample1.reset_index(drop=True), sample2.reset_index(drop=True)], axis=1)
+
+    features = [
+        'D1_scaled', 'As1_scaled', 'S1_scaled', 'R1_scaled', 'Ar1_scaled',
+        'D2_scaled', 'As2_scaled', 'S2_scaled', 'R2_scaled', 'Ar2_scaled',
+    ]
+    X.columns = features
+    print(X)
+
+    print("================ CII PREDICTION ================")
+    print(X)
+
+    preds = np.mean([model.predict(X) for model in ensemble], axis=0)
+    print("Predicted CII:", preds)
+    
+def print_actual_vs_predicted(parse_func, target_column: str, model_path: str = "models/nusvr_ensemble.pkl"):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column].reset_index(drop=True)
+
+    ensemble = joblib.load(model_path)
+    preds = np.mean([model.predict(X) for model in ensemble], axis=0)
+
+    results_df = pd.DataFrame({
+        'Actual': y,
+        'Predicted': preds
+    })
+    print(results_df)    
+    
+def test_nusvr_ensemble(parse_func, target_column: str, model_path: str = "models/asmix_nusvr_ensemble.pkl"):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    ensemble = joblib.load(model_path)
+    preds = np.mean([model.predict(X) for model in ensemble], axis=0)
+
+    r2 = r2_score(y, preds)
+    rmse = np.sqrt(mean_squared_error(y, preds))
+    print(f"Ensemble NuSVR R^2: {r2:.4f}")
+    print(f"Ensemble NuSVR RMSE: {rmse:.4f}")
+    print_actual_vs_predicted(parse_func, target_column, model_path)
+
 def asmix_linear_regression_train():
     from utils.parsers import parse_asmix, parse_asmix_with_density, parse_asmix_with_density_find_CII
-    target = 'AsMix'
     target = 'CII'
     
+    #what()
+    #test_nusvr_ensemble(parse_asmix_with_density_find_CII, target, model_path='models/asmix_nusvr_ensemble.pkl')
+    #export_ensemble_nusvr(parse_asmix_with_density_find_CII, target, n_models=5, export_path='models/asmix_nusvr_ensemble.pkl')
+    #from sklearn.svm import NuSVR
+    #model = NuSVR(C=1, kernel='rbf', nu=0.5)
+    #train_and_export(model, parse_asmix_with_density_find_CII, target, name='mix_findcii_model.pkl')
     #compare_regressors(parse_asmix_with_density, target, target)
     #compare_regressors(parse_asmix_with_density_find_CII, target, target)
     #compare_regressors_with_gridsearch(parse_asmix_with_density_find_CII, target, target)
     #compare_best_regressors(parse_asmix_with_density_find_CII, target, target)
-    compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, target, target, cv_folds=5, n_repeats=20)
+    compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, target, target, cv_folds=5, n_repeats=60)
+    #quick_hyperparam_search(parse_asmix_with_density_find_CII, target, 5, 25)
+    #repeated_cv_model(model, parse_asmix_with_density_find_CII, target, cv_folds=5, n_repeats=20)
     #compare_regressors_with_gridsearch(parse_asmix_with_density, target, target)
     #compare_best_regressors(parse_asmix_with_density, target, target)
 
 def s_value_linear_regression_train():
     #compare_regressors_with_gridsearch(parse_s_value, 'S_Value_res', 'S')
     #compare_regressors(parse_s_value, 'S_Value_res', 'S')
-    compare_regressors_repeated_cv(parse_s_value, 'S_Value_res', 'S', cv_folds=5, n_repeats=20)
-    df = parse_tsi_value()
-    print(df.head())
-    df = parse_s_value('s_value.csv')
+    #compare_regressors_repeated_cv(parse_s_value, 'S_Value_res', 'S', cv_folds=5, n_repeats=60)
+    #tune_top_regressors(parse_s_value, 'S_Value_res', cv_folds=5, n_repeats=60)
+    repeated_cv_extratrees(parse_s_value, 'S_Value_res', cv_folds=5, n_repeats=60) #! use this ig
+    #export_ensemble_tree(parse_s_value, 'S_Value_res', n_models=5, name='s_value_ensemble.pkl')
+    df = parse_s_value()
     print(df.head())
     X = df.drop(columns=['S_Value_res'])
     y = df['S_Value_res']

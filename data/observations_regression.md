@@ -22,6 +22,10 @@ featureset [['TSI_Value_part1', 'TSI_Value_part2', 'TSI_Value_res', 'D1_scaled',
 1. AdaBoostRegressor: Mean R^2 = 0.9274 (±0.0771), Mean RMSE = 0.4285 (±0.1501)
 2. GradientBoostingRegressor: Mean R^2 = 0.8738 (±0.1707), Mean RMSE = 0.5781 (±0.3773)
 3. ExtraTreesRegressor: Mean R^2 = 0.8698 (±0.1446), Mean RMSE = 0.5721 (±0.2662)
+60 repeat:
+1. AdaBoostRegressor: Mean R^2 = 0.8570 (±0.2408), Mean RMSE = 0.5595 (±0.2611)
+2. ExtraTreesRegressor: Mean R^2 = 0.8462 (±0.1843), Mean RMSE = 0.6525 (±0.3157)
+
 
 featureset [['TSI_Value_part1', 'TSI_Value_part2', 'TSI_Value_res', 'D1_scaled', 'D2_scaled']]
 0.7 best
@@ -29,6 +33,18 @@ najlepsze hiperparametry dla extratrees:
 Best R^2: 0.7918
 Best Params: {'max_depth': None, 'min_samples_leaf': 1, 'min_samples_split': 5, 'n_estimators': 50}
 Best RMSE (mean ± std): 0.7379 ± 0.3152
+
+
+Tuning AdaBoostRegressor...
+Best R^2: 0.7699
+Best Params: {'learning_rate': 1.0, 'loss': 'linear', 'n_estimators': 100}
+Best RMSE (mean ± std): 0.6569 ± 0.4164
+
+Tuning ExtraTreesRegressor...
+Best R^2: 0.7745
+Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 5, 'n_estimators': 50}
+Best RMSE (mean ± std): 0.7680 ± 0.3429
+
 
 # p-value:
 
@@ -40,6 +56,15 @@ p-value + As z augmentacją n_augmentations = 35, noise 0.05 i z As jako cechą 
 z usunięciem wwartości z p-value = 0 - 0.72
 
 dodanie Density nic nie daje sensownego (dla braku zerowych p-value, inaczej nie było testowane)
+
+
+same p-value augmentacja 0.03 noise: 1. ExtraTreesRegressor: Mean R^2 = 0.7832 (±0.2531), Mean RMSE = 0.2129 (±0.0683)
+moze byc dobre: Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100} --> teoretycznie 0.8 prtawie osiąga
+
+Tuning ExtraTreesRegressor...
+Best R^2: 0.7481
+Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
+Best RMSE (mean ± std): 0.2376 ± 0.0649
 
 
 ### walidacja krzyzowa 5 fold 20 repeat
@@ -55,7 +80,7 @@ uzywajac features = [
         'D2_scaled', 'As2_scaled', 'S2_scaled', 'R2_scaled', 'Ar2_scaled'
     ]
 1. MLPRegressor: Mean R^2 = 0.9146, Mean RMSE = 0.1586
-2. NuSVR: Mean R^2 = 0.9145, Mean RMSE = 0.1589
+2. NuSVR: Mean R^2 = 0.9145, Mean RMSE = 0.1589 **najbardziej stabilny**, co ciekawe, skalowanie danych pogorszyło wyniki
 3. AdaBoostRegressor: Mean R^2 = 0.8706, Mean RMSE = 0.1951
 
 uzywając dodatkowo typów próbek ropy:
@@ -70,3 +95,12 @@ TODO bo cos jest nie tak
 
 typy z As 0.5
 typy bez As 0.6-0.7
+
+
+Best R^2: 0.5672 Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
+Best RMSE (mean ± std): 0.3523 ± 0.0800
+
+Tuning ExtraTreesRegressor...
+Best R^2: 0.4971
+Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
+Best RMSE (mean ± std): 0.3898 ± 0.0910
