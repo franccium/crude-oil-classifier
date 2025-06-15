@@ -1,7 +1,7 @@
 
 import matplotlib.pyplot as plt
 
-from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from training.model_definition import models
@@ -12,17 +12,11 @@ from ui.initial_selection import select_dataset, select_graphs, select_featurese
 
 from regression.train_regression_models import tsi_value_linear_regression_train, s_value_linear_regression_train, p_value_linear_regression_train, asmix_linear_regression_train
 
-
-from utils.parsers import generate_types
-
-#generate_types()
-
 #tsi_value_linear_regression_train()
-p_value_linear_regression_train()
+#p_value_linear_regression_train()
 #s_value_linear_regression_train()
 #asmix_linear_regression_train()
 
-#todo placeholder code
 def test_exported_model():
     model_file = select_model_file()
     if not model_file:

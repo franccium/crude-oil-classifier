@@ -100,7 +100,6 @@ uzywając dodatkowo typów próbek ropy:
 0.89 z typami i tylko As i S
 
 # s-value
-TODO bo cos jest nie tak
 !moze trzeba usunac outlierów
 !hiperparametry
 0.65 z As, bez slabo
