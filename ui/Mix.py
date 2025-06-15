@@ -1,8 +1,15 @@
 import pandas as pd
 import numpy as np
+from sklearn.utils.extmath import density
+
 import ui.state as state
+import joblib
+
+from utils.markers import asses_cii, asses_p_value, asses_tsi, asses_s_value
+from utils.ranking import light_oil_ans, medium_oil_ans, heavy_oil_ans
 
 label_mapping = {'light': 0, 'medium': 1, 'heavy': 2}
+stability_mapping = {'stable': 0, 'lower stability': 1, 'unstable': 2}
 reverse_label_mapping = {v: k for k, v in label_mapping.items()}
 
 
@@ -30,7 +37,30 @@ class Mix:
         self.Pvalue = self.predict_pvalue()
         self.TSI = self.predict_tsi()
 
-        self.predicted = "Stable"
+        self.mix_type = self.predict_mix_type()
+        self.predicted = self.predict_stability()
+
+    def predict_mix_type(self):
+        density_1 = self.sample1['Density'].dropna().iloc[0]
+        density_2 = self.sample2['Density'].dropna().iloc[0]
+        mix_density = (self.v1 * density_1 + self.v2 * density_2)/100
+        features = pd.DataFrame([{
+            'Density': mix_density,
+            'CII': self.CII,
+        }])
+
+        model = joblib.load('./models/mlp_density_cii.pkl')
+
+        predicted_type = model.predict(features)[0]
+
+        return predicted_type
+
+    def predict_stability(self):
+        if self.mix_type == 'light':
+            return light_oil_ans(asses_s_value(self.Svalue), asses_tsi(self.TSI))
+        if self.mix_type == 'medium':
+            return medium_oil_ans(asses_cii(self.CII), asses_p_value(self.Pvalue), asses_s_value(self.Svalue))
+        return heavy_oil_ans(asses_cii(self.CII), asses_p_value(self.Pvalue), asses_s_value(self.Svalue))
 
     def get_samples(self, data):
         if data is None:
@@ -54,8 +84,6 @@ class Mix:
 
     def predict_type(self, id):
         try:
-            import joblib
-
             clf = joblib.load('./models/random forest_density_group.pkl')
 
             row = self.sample1 if id == self.id1 else self.sample2
@@ -72,8 +100,6 @@ class Mix:
 
     def predict_cii(self):
         try:
-            import joblib
-
             ensemble = joblib.load("models/asmix_nusvr_ensemble.pkl")
 
 
@@ -100,8 +126,6 @@ class Mix:
 
     def predict_tsi(self):
         try:
-            import joblib
-
             ensemble = joblib.load("models/tsi_value_ensemble6.pkl")
 
             if pd.isna(self.sample1['TSI'].iloc[0]) or pd.isna(self.sample2['TSI'].iloc[0]):
@@ -136,8 +160,6 @@ class Mix:
 
     def predict_pvalue(self):
         try:
-            import joblib
-
             ensemble = joblib.load("models/p_value_ensemble_invar.pkl")
 
             if pd.isna(self.sample1['P_value'].iloc[0]) or pd.isna(self.sample2['P_value'].iloc[0]):
@@ -175,8 +197,6 @@ class Mix:
 
     def predict_svalue(self):
         try:
-            import joblib
-
             ensemble = joblib.load("models/s_value_ensemble_invar.pkl")
 
             if pd.isna(self.sample1['S_value'].iloc[0]) or pd.isna(self.sample2['S_value'].iloc[0]):
