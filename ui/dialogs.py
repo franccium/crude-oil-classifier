@@ -147,7 +147,7 @@ def show_ranking_dialog():
 
     def run_ranking():
         ranking()
-        dialog.after(0, lambda: label.config(text="Ranking in csv"))
+        dialog.after(0, lambda: label.config(text="Details in console."))
 
     threading.Thread(target=run_ranking, daemon=True).start()
 

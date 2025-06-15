@@ -29,6 +29,7 @@ class Mix:
         self.Svalue = self.predict_svalue()
         self.Pvalue = self.predict_pvalue()
         self.TSI = self.predict_tsi()
+
         self.predicted = "Stable"
 
     def get_samples(self, data):

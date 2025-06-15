@@ -282,9 +282,16 @@ def show_result_screen():
         foreground=type_color.get(mix.type2, "black")
     ).grid(row=2, column=1, sticky="w", padx=10)
 
+    stability_colors = {
+        "stable": "green",
+        "unstable": "red",
+        "reduced stability": "orange"
+    }
+
+    fg_color = stability_colors.get(mix.predicted.lower(), "black")
 
     ttk.Label(state.root, text=f"Predicted Stability: {mix.predicted}",
-              font=("Helvetica", 13, "bold"), foreground="#2b7a0b").grid(row=1, column=0, pady=(10, 20))
+              font=("Helvetica", 13, "bold"), foreground=fg_color).grid(row=1, column=0, pady=(10, 20))
 
 
     headers = ["CII", "S-Value", "P-Value", "TSI"]
