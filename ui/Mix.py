@@ -39,6 +39,7 @@ class Mix:
 
         self.mix_type = self.predict_mix_type()
         self.predicted = self.predict_stability()
+        self.mix_type = reverse_label_mapping[self.mix_type]
 
     def predict_mix_type(self):
         density_1 = self.sample1['Density'].dropna().iloc[0]

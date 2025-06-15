@@ -120,13 +120,6 @@ def show_sample_selection():
         def background_task():
             try:
                 mix_result = Mix(s1, s2, v1, v2)
-                # after creating mix, we can call functions from mix which will predict values
-                print("Selected graphs:", state.graph_flags)
-                print(
-                    f"Selected mix from samples: {mix_result.id1} and {mix_result.id2}. In ratio: {mix_result.v1}:{mix_result.v2}.")
-                print(f"Sara of sample 1: {mix_result.id1}: {mix_result.sara1}. ")
-                print(f"Sara of sample 2: {mix_result.id2}: {mix_result.sara2}. ")
-                print(f"Best model for featureset: {state.best_model}")
 
                 def on_done():
                     state.mix = mix_result
@@ -158,8 +151,7 @@ def show_sample_input():
     main_frame = tk.Frame(state.root)
     main_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
 
-    # Configure main_frame columns to expand
-    for col in range(10):  # 0-9 columns (label column + 9 feature columns)
+    for col in range(10):
         main_frame.grid_columnconfigure(col, weight=1)
 
     value1 = tk.IntVar(value=50)
@@ -291,14 +283,17 @@ def show_result_screen():
     fg_color = stability_colors.get(mix.predicted.lower(), "black")
 
     ttk.Label(state.root, text=f"Predicted Stability: {mix.predicted}",
-              font=("Helvetica", 13, "bold"), foreground=fg_color).grid(row=1, column=0, pady=(10, 20))
+              font=("Helvetica", 13, "bold"), foreground=fg_color).grid(row=1, column=0, pady=0)
+
+    ttk.Label(state.root, text=f"Predicted Type: {mix.mix_type}",
+              font=("Helvetica", 13, "bold"), foreground=type_color.get(mix.mix_type, "black")).grid(row=2, column=0, pady=0)
 
 
     headers = ["CII", "S-Value", "P-Value", "TSI"]
     values = [str(mix.CII), str(mix.Svalue), str(mix.Pvalue), str(mix.TSI)]
 
     table_frame = tk.Frame(state.root, bg="white", highlightbackground="#cccccc", highlightthickness=1)
-    table_frame.grid(row=2, column=0, pady=10, padx=20)
+    table_frame.grid(row=3, column=0, pady=10, padx=20)
 
     for col in range(len(headers)):
         table_frame.grid_columnconfigure(col, weight=1, minsize=100)
@@ -317,4 +312,4 @@ def show_result_screen():
 
         tk.Label(value_cell, text=value, font=("Helvetica", 11), bg="white", fg=fg_color).pack(fill="both", expand=True)
 
-    ttk.Button(state.root, text="Back", command=show_main_screen).grid(row=3, column=0, pady=20)
+    ttk.Button(state.root, text="Back", command=show_main_screen).grid(row=4, column=0, pady=20)

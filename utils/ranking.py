@@ -1,30 +1,48 @@
 
 
 def light_oil_ans(m_s_value, m_tsi):
-    tsi_effectiveness = 0.7
-    s_value_effectiveness = 0.6
-    summed_effect = tsi_effectiveness + s_value_effectiveness
-
-    return give_verdict((tsi_effectiveness * m_tsi + s_value_effectiveness * m_s_value) /
-                        summed_effect)
+    params = [
+        (m_tsi, 0.7),
+        (m_s_value, 0.6),
+    ]
+    num, denom = 0, 0
+    for val, weight in params:
+        if val != -1:
+            num += val * weight
+            denom += weight
+    if denom == 0:
+        return 'Unknown'
+    return give_verdict(num / denom)
 
 def medium_oil_ans(m_cii, m_p_value, m_s_value):
-    p_value_effectiveness = 0.95
-    s_value_effectiveness = 0.85
-    sara_effectiveness = 0.65
-    summed_effect = p_value_effectiveness + s_value_effectiveness + sara_effectiveness
-
-    return give_verdict((p_value_effectiveness * m_p_value + s_value_effectiveness * m_s_value
-                        + sara_effectiveness * m_cii) / summed_effect)
+    params = [
+        (m_p_value, 0.95),
+        (m_s_value, 0.85),
+        (m_cii, 0.65),
+    ]
+    num, denom = 0, 0
+    for val, weight in params:
+        if val != -1:
+            num += val * weight
+            denom += weight
+    if denom == 0:
+        return 'Unknown'
+    return give_verdict(num / denom)
 
 def heavy_oil_ans(m_cii, m_p_value, m_s_value):
-    p_value_effectiveness = 1.0
-    s_value_effectiveness = 0.905
-    sara_effectiveness = 0.762
-    summed_effect = p_value_effectiveness + s_value_effectiveness + sara_effectiveness
-
-    return give_verdict((p_value_effectiveness * m_p_value + s_value_effectiveness * m_s_value
-                        + m_cii * sara_effectiveness ) / summed_effect)
+    params = [
+        (m_p_value, 1.0),
+        (m_s_value, 0.905),
+        (m_cii, 0.762),
+    ]
+    num, denom = 0, 0
+    for val, weight in params:
+        if val != -1:
+            num += val * weight
+            denom += weight
+    if denom == 0:
+        return 'Unknown'
+    return give_verdict(num / denom)
 
 
 def give_verdict(val):
