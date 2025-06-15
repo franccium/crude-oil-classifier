@@ -7,12 +7,18 @@ reverse_label_mapping = {v: k for k, v in label_mapping.items()}
 
 
 class Mix:
-    def __init__(self, id1, id2, v1, v2):
+    def __init__(self, id1, id2, v1, v2, data=None):
         self.id1 = id1
         self.id2 = id2
         self.v1 = v1
         self.v2 = v2
+
         self.dataset = state.prediction_dataset
+
+        self.sample1 = None
+        self.sample2 = None
+        self.get_samples(data)
+
         self.sara1 = self.get_sara(id1)
         self.sara2 = self.get_sara(id2)
 
@@ -25,6 +31,17 @@ class Mix:
         self.TSI = self.predict_tsi()
         self.predicted = "Stable"
 
+    def get_samples(self, data):
+        if data is None:
+            df = pd.read_csv(f"./data/{self.dataset}")
+            self.dataset = state.prediction_dataset
+            self.sample1 = df[df['Sample ID'] == self.id1]
+            self.sample2 = df[df['Sample ID'] == self.id2]
+        else:
+            self.sample1 = pd.DataFrame([data[0]])
+            self.sample2 = pd.DataFrame([data[1]])
+            print(self.sample1)
+            print(self.sample2)
 
     def get_sara(self, id):
         df = pd.read_csv(f"./data/{self.dataset}")
@@ -40,8 +57,7 @@ class Mix:
 
             clf = joblib.load('./models/random forest_density_group.pkl')
 
-            df = pd.read_csv(f"./data/{self.dataset}")
-            row = df[df['Sample ID'] == id]
+            row = self.sample1 if id == self.id1 else self.sample2
 
             features = ['Density', 'S', 'Ar', 'R', 'As']
             X = row[features]
@@ -59,12 +75,9 @@ class Mix:
 
             ensemble = joblib.load("models/asmix_nusvr_ensemble.pkl")
 
-            df = pd.read_csv(f"./data/{self.dataset}")
-            sample1 = df[df['Sample ID'] == self.id1]
-            sample2 = df[df['Sample ID'] == self.id2]
 
-            sample1 = sample1[['Density', 'As', 'S', 'R', 'Ar']]
-            sample2 = sample2[['Density', 'As', 'S', 'R', 'Ar']]
+            sample1 = self.sample1[['Density', 'As', 'S', 'R', 'Ar']]
+            sample2 = self.sample2[['Density', 'As', 'S', 'R', 'Ar']]
 
             sample1 = sample1 * self.v1 / 10000
             sample2 = sample2 * self.v2 / 10000
@@ -90,15 +103,11 @@ class Mix:
 
             ensemble = joblib.load("models/tsi_value_ensemble6.pkl")
 
-            df = pd.read_csv(f"./data/{self.dataset}")
-            sample1 = df[df['Sample ID'] == self.id1]
-            sample2 = df[df['Sample ID'] == self.id2]
-
-            if pd.isna(sample1['TSI'].iloc[0]) or pd.isna(sample2['TSI'].iloc[0]):
+            if pd.isna(self.sample1['TSI'].iloc[0]) or pd.isna(self.sample2['TSI'].iloc[0]):
                 return "-"
 
-            sample1 = sample1[['TSI', 'Density', 'As']]
-            sample2 = sample2[['TSI', 'Density', 'As']]
+            sample1 = self.sample1[['TSI', 'Density', 'As']]
+            sample2 = self.sample2[['TSI', 'Density', 'As']]
 
             sample1 = sample1 * self.v1 / 100
             sample2 = sample2 * self.v2 / 100
@@ -130,15 +139,11 @@ class Mix:
 
             ensemble = joblib.load("models/p_value_ensemble_invar.pkl")
 
-            df = pd.read_csv(f"./data/{self.dataset}")
-            sample1 = df[df['Sample ID'] == self.id1]
-            sample2 = df[df['Sample ID'] == self.id2]
-
-            if pd.isna(sample1['P_value'].iloc[0]) or pd.isna(sample2['P_value'].iloc[0]):
+            if pd.isna(self.sample1['P_value'].iloc[0]) or pd.isna(self.sample2['P_value'].iloc[0]):
                 return "-"
 
-            sample1 = sample1[['P_value', 'Density', 'As']]
-            sample2 = sample2[['P_value', 'Density', 'As']]
+            sample1 = self.sample1[['P_value', 'Density', 'As']]
+            sample2 = self.sample2[['P_value', 'Density', 'As']]
 
             sample1 = sample1 * self.v1
             sample2 = sample2 * self.v2
@@ -173,15 +178,11 @@ class Mix:
 
             ensemble = joblib.load("models/s_value_ensemble_invar.pkl")
 
-            df = pd.read_csv(f"./data/{self.dataset}")
-            sample1 = df[df['Sample ID'] == self.id1]
-            sample2 = df[df['Sample ID'] == self.id2]
-
-            if pd.isna(sample1['S_value'].iloc[0]) or pd.isna(sample2['S_value'].iloc[0]):
+            if pd.isna(self.sample1['S_value'].iloc[0]) or pd.isna(self.sample2['S_value'].iloc[0]):
                 return "-"
 
-            sample1 = sample1[['S_value', 'As']]
-            sample2 = sample2[['S_value', 'As']]
+            sample1 = self.sample1[['S_value', 'As']]
+            sample2 = self.sample2[['S_value', 'As']]
 
             sample1 = sample1 * self.v1
             sample2 = sample2 * self.v2

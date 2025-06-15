@@ -6,8 +6,9 @@ def main():
     root = tk.Tk()
     state.root = root
     root.title("Oil Classifier")
-    root.geometry("600x400")
-    root.minsize(600, 400)
+    root.geometry("800x400")
+    root.minsize(800, 500)
+    root.maxsize(800, 400)
     show_main_screen()
     root.mainloop()
 

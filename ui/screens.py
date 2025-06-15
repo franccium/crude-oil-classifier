@@ -13,14 +13,18 @@ def show_main_screen():
     state.root.title("Oil Classifier App")
     state.root.grid_rowconfigure(0, weight=1)
     state.root.grid_rowconfigure(1, weight=1)
+    state.root.grid_rowconfigure(2, weight=1)
     state.root.grid_columnconfigure(0, weight=1)
     state.root.grid_columnconfigure(1, weight=0)
 
     tk.Button(state.root, text="Model ranking", width=20, command=show_ranking_screen).grid(
-        row=0, column=0, pady=70, padx=100, sticky="nsew"
+        row=0, column=0, pady=50, padx=100, sticky="nsew"
     )
-    tk.Button(state.root, text="Samples mixing", width=20, command=show_sample_selection).grid(
-        row=1, column=0, pady=70, padx=100, sticky="nsew"
+    tk.Button(state.root, text="Samples mixing from dataset", width=20, command=show_sample_selection).grid(
+        row=1, column=0, pady=50, padx=100, sticky="nsew"
+    )
+    tk.Button(state.root, text="Samples mixing with own data", width=20, command=show_sample_input).grid(
+        row=2, column=0, pady=50, padx=100, sticky="nsew"
     )
 
 def show_ranking_screen():
@@ -38,23 +42,23 @@ def show_ranking_screen():
     )
 
     tk.Button(state.root, text="Select Dataset", width=20, command=select_dataset).grid(
-        row=1, column=0, columnspan=2, pady=5, padx=60, sticky="nsew"
+        row=1, column=0, columnspan=2, pady=15, padx=60, sticky="nsew"
     )
     tk.Button(state.root, text="Select Graphs Options", width=20, command=select_graphs).grid(
-        row=2, column=0, columnspan=2, pady=5, padx=60,sticky="nsew"
+        row=2, column=0, columnspan=2, pady=15, padx=60,sticky="nsew"
     )
     tk.Button(state.root, text="Select featureset", width=20, command=select_featureset).grid(
-        row=3, column=0, columnspan=2, pady=5, padx=60,sticky="nsew"
+        row=3, column=0, columnspan=2, pady=15, padx=60,sticky="nsew"
     )
     tk.Button(state.root, text="Select model", width=20, command=get_best_model_for_featureset).grid(
-        row=4, column=0, columnspan=2, pady=5, padx=60,sticky="nsew"
+        row=4, column=0, columnspan=2, pady=15, padx=60,sticky="nsew"
     )
 
     tk.Button(state.root, text="Back", width=20, command=show_main_screen).grid(
-        row=5, column=0, pady=20, padx=60,sticky="nsew"
+        row=5, column=0, pady=25, padx=60,sticky="nsew"
     )
     tk.Button(state.root, text="Next", width=20, command=go_next_ranking).grid(
-        row=5, column=1, pady=20, padx=60,sticky="nsew"
+        row=5, column=1, pady=25, padx=60,sticky="nsew"
     )
 
 def show_sample_selection():
@@ -142,6 +146,100 @@ def show_sample_selection():
 
     def go_back():
         show_main_screen()
+
+def show_sample_input():
+    clear_window(state.root)
+    state.root.title("Enter Sample Data")
+
+    state.root.grid_rowconfigure(0, weight=1)  # Allow main_frame to expand
+    state.root.grid_rowconfigure(1, weight=0)  # Buttons fixed at bottom
+    state.root.grid_columnconfigure(0, weight=1)
+
+    main_frame = tk.Frame(state.root)
+    main_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+
+    # Configure main_frame columns to expand
+    for col in range(10):  # 0-9 columns (label column + 9 feature columns)
+        main_frame.grid_columnconfigure(col, weight=1)
+
+    value1 = tk.IntVar(value=50)
+    value2 = tk.IntVar(value=50)
+
+    def on_scale1_change(val):
+        val = int(float(val))
+        value1.set(val)
+        value2.set(100 - val)
+        scale2.set(100 - val)
+
+    def on_scale2_change(val):
+        val = int(float(val))
+        value2.set(val)
+        value1.set(100 - val)
+        scale1.set(100 - val)
+
+    # Feature names
+    labels = ["Density", "TSI", "S", "Ar", "R", "As", "CII", "S_value", "P_value"]
+
+    sample1_entries = {}
+    sample2_entries = {}
+
+    for col, label in enumerate(labels, start=1):
+        tk.Label(main_frame, text=label, font=("Arial", 10, "bold")).grid(row=0, column=col, padx=3, pady=5)
+
+    tk.Label(main_frame, text="Sample 1").grid(row=1, column=0, padx=3, sticky="w")
+    for col, label in enumerate(labels, start=1):
+        entry = tk.Entry(main_frame, width=5)
+        entry.grid(row=1, column=col, padx=3, pady=2)
+        sample1_entries[label] = entry
+
+    tk.Label(main_frame, text="Sample 2").grid(row=2, column=0, padx=3, sticky="w")
+    for col, label in enumerate(labels, start=1):
+        entry = tk.Entry(main_frame, width=5)
+        entry.grid(row=2, column=col, padx=3, pady=2)
+        sample2_entries[label] = entry
+
+    tk.Label(main_frame, text="Sample 1 (%)").grid(row=3, column=1, columnspan=4, pady=(20, 0))
+    tk.Label(main_frame, text="Sample 2 (%)").grid(row=3, column=5, columnspan=4, pady=(20, 0))
+
+    scale1 = tk.Scale(main_frame, from_=0, to=100, orient='horizontal', variable=value1, command=on_scale1_change)
+    scale1.grid(row=4, column=1, columnspan=4, padx=10, pady=10, sticky="ew")
+
+    scale2 = tk.Scale(main_frame, from_=0, to=100, orient='horizontal', variable=value2, command=on_scale2_change)
+    scale2.grid(row=4, column=5, columnspan=4, padx=10, pady=10, sticky="ew")
+
+    tk.Button(state.root, text="Back", width=15, command=lambda: show_main_screen()).grid(row=4, column=0, sticky="sw", pady=30, padx=50)
+    tk.Button(state.root, text="Confirm", width=15, command=lambda: confirm()).grid(row=4, column=0, sticky="se", pady=30, padx=50)
+    def confirm():
+        try:
+            sample1 = {key: float(entry.get()) for key, entry in sample1_entries.items()}
+            sample2 = {key: float(entry.get()) for key, entry in sample2_entries.items()}
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter valid numeric values for all fields.")
+            return
+
+        v1, v2 = value1.get(), value2.get()
+
+        loading = show_loading(state.root)
+
+        def background_task():
+            try:
+                mix_result = Mix("", "", v1, v2, [sample1, sample2])
+
+                def on_done():
+                    state.mix = mix_result
+                    loading.destroy()
+                    show_result_screen()
+
+                state.root.after(0, on_done)
+
+            except Exception as e:
+                def show_error(e=e):
+                    loading.destroy()
+                    messagebox.showerror("Error", f"Failed to create mix:\n{e}")
+
+                state.root.after(0, show_error)
+
+        threading.Thread(target=background_task).start()
 
 def go_next_ranking():
     if not state.selected_file or not state.featureset or not state.best_model:
