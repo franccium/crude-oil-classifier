@@ -185,24 +185,6 @@ def analyze_repeated_cv_model(model, parse_func, target_column: str, cv_folds: i
     plt.tight_layout()
     plt.show()
 
-def export_ensemble_nusvr(parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
-    from sklearn.svm import NuSVR
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-
-    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=9)
-    ensemble = []
-    for i, (train_idx, _) in enumerate(rkf.split(X)):
-        if i >= n_models:
-            break
-        model = NuSVR(C=1, kernel='rbf', nu=0.5)
-        model.fit(X.iloc[train_idx], y.iloc[train_idx])
-        ensemble.append(model)
-    path = os.path.join("models", name)
-    joblib.dump(ensemble, path)
-    print(f"Ensemble of {n_models} NuSVR models exported to {path}")
-
 def analyze_tree_ensemble(model, parse_func, target_column: str = 'TSI_Value_res', title_prefix: str = "TSI", n_models: int = 10, radius: float = 1.0):
     df = parse_func()
     X = df.drop(columns=[target_column])
@@ -252,6 +234,23 @@ def analyze_tree_ensemble(model, parse_func, target_column: str = 'TSI_Value_res
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+    
+def export_ensemble_model(model, parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
+    df = parse_func()
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=9)
+    ensemble = []
+    for i, (train_idx, _) in enumerate(rkf.split(X)):
+        if i >= n_models:
+            break
+        model_copy = clone(model)
+        model_copy.fit(X.iloc[train_idx], y.iloc[train_idx])
+        ensemble.append(model_copy)
+    path = os.path.join("models", name)
+    joblib.dump(ensemble, path)
+    print(f"Ensemble of {n_models} {type(model).__name__} models exported to {path}")
 
 def p_value_linear_regression_train():
     model = ExtraTreesRegressor(
@@ -279,7 +278,7 @@ def asmix_linear_regression_train():
     model = NuSVR(C=1, kernel='rbf', nu=0.5)
     
     #compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, 'CII', 'CII', cv_folds=5, n_repeats=60)
-    #export_ensemble_model(model, parse_asmix_with_density_find_CII, 'CII', n_models=5, name='asmix_nusvr_ensemble.pkl')
+    export_ensemble_model(model, parse_asmix_with_density_find_CII, 'CII', n_models=5, name='asmix_nusvr_ensemble.pkl')
     compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, 'CII', 'CII', cv_folds=5, n_repeats=60)
 
 def s_value_linear_regression_train():
