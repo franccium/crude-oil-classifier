@@ -30,7 +30,6 @@ def ranking():
     all_rankings = {}
     all_class_acc = {}
 
-    print('here2')
 
     if graph_flags['cv_summary']:
         all_rankings, all_class_acc = evaluate_models_cv(

@@ -28,7 +28,6 @@ def show_main_screen():
     )
 
 def show_ranking_screen():
-    print("here")
     clear_window(state.root)
     state.root.title("Oil Classifier Ranking")
 

@@ -5,16 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="596da8d6-eae3-4ab1-b2a6-573c3730ffc1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/joined.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/s_value_extratrees.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/generate_ranking.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/ranking.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/Mix.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/Mix.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/screens.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/screens.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,30 +32,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.augmentation.executor": "Run",
-    "Python.generate_ranking.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.models.executor": "Run",
-    "Python.parsers.executor": "Run",
-    "Python.sara.executor": "Run",
-    "Python.test_through_regression.executor": "Run",
-    "Python.train_regression_models.executor": "Run",
-    "Python.ui_utils.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/krzysztof/si/crude-oil-classifier/data",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.augmentation.executor&quot;: &quot;Run&quot;,
+    &quot;Python.generate_ranking.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.models.executor&quot;: &quot;Run&quot;,
+    &quot;Python.parsers.executor&quot;: &quot;Run&quot;,
+    &quot;Python.sara.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_through_regression.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train_regression_models.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ui_utils.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/krzysztof/si/crude-oil-classifier/data&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/data" />
@@ -93,7 +86,7 @@
       <workItem from="1749911636181" duration="33000" />
       <workItem from="1749911672518" duration="6644000" />
       <workItem from="1749937813888" duration="4946000" />
-      <workItem from="1749987065162" duration="5789000" />
+      <workItem from="1749987065162" duration="10637000" />
     </task>
     <servers />
   </component>
