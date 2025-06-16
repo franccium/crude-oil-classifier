@@ -7,10 +7,18 @@ from training.cross_validation import evaluate_models_cv, report_cv_results
 from training.model_definition import models
 from training.models import ModelsTraining
 import matplotlib.pyplot as plt
+import sys, os
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 def load_sample_ids():
     sample_ids = []
-    with open(f"./data/{state.prediction_dataset}", newline='') as csvfile:
+    with open(resource_path(f"data/{state.prediction_dataset}"), newline='') as csvfile:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
@@ -29,8 +37,6 @@ def ranking():
     X_scaled = scaler.fit_transform(X)
     all_rankings = {}
     all_class_acc = {}
-
-    print('here2')
 
     if graph_flags['cv_summary']:
         all_rankings, all_class_acc = evaluate_models_cv(

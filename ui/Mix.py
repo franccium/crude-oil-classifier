@@ -5,6 +5,7 @@ from sklearn.utils.extmath import density
 import ui.state as state
 import joblib
 
+from ui.utils import resource_path
 from utils.markers import asses_cii, asses_p_value, asses_tsi, asses_s_value
 from utils.ranking import light_oil_ans, medium_oil_ans, heavy_oil_ans
 
@@ -50,7 +51,7 @@ class Mix:
             'CII': self.CII,
         }])
 
-        model = joblib.load('./models/mlp_density_cii.pkl')
+        model = joblib.load(resource_path('models/mlp_density_cii.pkl'))
 
         predicted_type = model.predict(features)[0]
 
@@ -65,18 +66,16 @@ class Mix:
 
     def get_samples(self, data):
         if data is None:
-            df = pd.read_csv(f"./data/{self.dataset}")
+            df = pd.read_csv(resource_path(f"data/{self.dataset}"))
             self.dataset = state.prediction_dataset
             self.sample1 = df[df['Sample ID'] == self.id1]
             self.sample2 = df[df['Sample ID'] == self.id2]
         else:
             self.sample1 = pd.DataFrame([data[0]])
             self.sample2 = pd.DataFrame([data[1]])
-            print(self.sample1)
-            print(self.sample2)
 
     def get_sara(self, id):
-        df = pd.read_csv(f"./data/{self.dataset}")
+        df = pd.read_csv(resource_path(f"data/{self.dataset}"))
         row = df[df['Sample ID'] == id]
 
         sara_array = row[['S', 'Ar', 'R', 'As']].to_numpy().flatten()
@@ -85,7 +84,7 @@ class Mix:
 
     def predict_type(self, id):
         try:
-            clf = joblib.load('./models/random forest_density_group.pkl')
+            clf = joblib.load(resource_path('models/random forest_density_group.pkl'))
 
             row = self.sample1 if id == self.id1 else self.sample2
 
@@ -101,7 +100,7 @@ class Mix:
 
     def predict_cii(self):
         try:
-            ensemble = joblib.load("models/asmix_nusvr_ensemble.pkl")
+            ensemble = joblib.load(resource_path("models/asmix_nusvr_ensemble.pkl"))
 
 
             sample1 = self.sample1[['Density', 'As', 'S', 'R', 'Ar']]
@@ -127,7 +126,7 @@ class Mix:
 
     def predict_tsi(self):
         try:
-            ensemble = joblib.load("models/tsi_value_ensemble6.pkl")
+            ensemble = joblib.load(resource_path("models/tsi_value_ensemble6.pkl"))
 
             if pd.isna(self.sample1['TSI'].iloc[0]) or pd.isna(self.sample2['TSI'].iloc[0]):
                 return "-"
@@ -161,7 +160,7 @@ class Mix:
 
     def predict_pvalue(self):
         try:
-            ensemble = joblib.load("models/p_value_ensemble_invar.pkl")
+            ensemble = joblib.load(resource_path("models/p_value_ensemble_invar.pkl"))
 
             if pd.isna(self.sample1['P_value'].iloc[0]) or pd.isna(self.sample2['P_value'].iloc[0]):
                 return "-"
@@ -198,7 +197,7 @@ class Mix:
 
     def predict_svalue(self):
         try:
-            ensemble = joblib.load("models/s_value_ensemble_invar.pkl")
+            ensemble = joblib.load(resource_path("models/s_value_ensemble_invar.pkl"))
 
             if pd.isna(self.sample1['S_value'].iloc[0]) or pd.isna(self.sample2['S_value'].iloc[0]):
                 return "-"
