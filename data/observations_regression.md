@@ -55,7 +55,7 @@ p-value + As z augmentacją n_augmentations = 35, noise 0.05 i z As jako cechą 
 
 z usunięciem wwartości z p-value = 0 - 0.72
 
-dodanie Density nic nie daje sensownego (dla braku zerowych p-value, inaczej nie było testowane)
+dodanie Density nic nie daje sensownego (dla braku zerowych p-value)
 
 
 same p-value augmentacja 0.03 noise: 1. ExtraTreesRegressor: Mean R^2 = 0.7832 (±0.2531), Mean RMSE = 0.2129 (±0.0683)
@@ -65,6 +65,18 @@ Tuning ExtraTreesRegressor...
 Best R^2: 0.7481
 Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
 Best RMSE (mean ± std): 0.2376 ± 0.0649
+
+
+order invariant:
+'P_Value_mean',
+'As_scaled_sum', 'As_scaled_mean',
+'D_scaled_sum', 'D_scaled_mean',
+'P_Value_res'
+1. ExtraTreesRegressor: Mean R^2 = 0.7639 (±0.1846), Mean RMSE = 0.2265 (±0.0512)
+2. GradientBoostingRegressor: Mean R^2 = 0.7632 (±0.1824), Mean RMSE = 0.2277 (±0.0516)
+3. BaggingRegressor: Mean R^2 = 0.7585 (±0.1795), Mean RMSE = 0.2311 (±0.0464)
+4. RandomForestRegressor: Mean R^2 = 0.7584 (±0.1798), Mean RMSE = 0.2311 (±0.0459)
+5. AdaBoostRegressor: Mean R^2 = 0.7410 (±0.1772), Mean RMSE = 0.2416 (±0.0518)
 
 
 ### walidacja krzyzowa 5 fold 20 repeat
@@ -88,10 +100,9 @@ uzywając dodatkowo typów próbek ropy:
 0.89 z typami i tylko As i S
 
 # s-value
-TODO bo cos jest nie tak
 !moze trzeba usunac outlierów
 !hiperparametry
-0.65 z As, bez tragedia
+0.65 z As, bez slabo
 
 typy z As 0.5
 typy bez As 0.6-0.7
@@ -104,3 +115,36 @@ Tuning ExtraTreesRegressor...
 Best R^2: 0.4971
 Best Params: {'max_depth': 8, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
 Best RMSE (mean ± std): 0.3898 ± 0.0910
+
+
+OUR REGRESSORS:
+ensembles seemed to work best cause its all very random
+done with RepeatedKFold(n_folds = 5, n_repeats = ensemble_size)
+hyperparameters found via gridsearchCV
+
+TSI - extra trees ensemble of 10
+model = ExtraTreesRegressor(
+            max_depth=8,
+            min_samples_leaf=1,
+            min_samples_split=5,
+            n_estimators=200
+        )
+
+P-Val - extra trees ensemble of 10
+ model = ExtraTreesRegressor(
+            max_depth=8,
+            min_samples_leaf=1,
+            min_samples_split=2,
+            n_estimators=100
+        )
+
+S-Val - extra trees ensemble of 1
+ model = ExtraTreesRegressor(
+            max_depth=8,
+            min_samples_leaf=1,
+            min_samples_split=2,
+            n_estimators=100
+        )
+
+CII - NuSVR ensemble of 5
+NuSVR(C=1, kernel='rbf', nu=0.5)

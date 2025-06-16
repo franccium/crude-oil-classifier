@@ -3,337 +3,25 @@ import joblib
 import os
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
-
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, SGDRegressor
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import RepeatedKFold, train_test_split
-from sklearn.svm import SVR
-
-from utils.parsers import parse_sara, parse_s_value, parse_tsi_value, parse_p_value
-from utils.augmentation import sara_aug
-
-def sara_linear_regression_train():
-    df = parse_sara('sara.csv')
-    X = df.drop(columns=['CII', 'ID_1', 'ID_2', '%_1', '%_2', 'Nr'])
-    y = df['CII']
-
-    augmented_df = sara_aug(df)
-    augmented_x =  augmented_df.drop(columns=['CII'])
-    augmented_y = augmented_df['CII']
-    X = pd.concat([X, augmented_x], ignore_index=True)
-    y = pd.concat([y, augmented_y], ignore_index=True)
-
-    regr = LinearRegression()
-    regr.fit(X, y)
-    joblib.dump(regr, os.path.join('..', 'models', 'sara_linear_regression.pkl' ))
-
-    return regr
-
-def linear_regression_train(parse_func, target_column: str, title_prefix: str = ""):
-    df = parse_func()
-    print(df.head())
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(
-        X.iloc[:, 0],
-        X.iloc[:, 1],
-        y,
-        c='green', marker='o'
-    )
-    ax.set_xlabel(X.columns[0])
-    ax.set_ylabel(X.columns[1])
-    ax.set_zlabel(target_column)
-    ax.set_title(f'3D Scatter Plot: {X.columns[0]} vs {X.columns[1]} vs {target_column}')
-    plt.tight_layout()
-    plt.show()
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    regr = LinearRegression()
-    regr.fit(X_train, y_train)
-    train_score = regr.score(X_train, y_train)
-    test_score = regr.score(X_test, y_test)
-    print(f"Train R^2 Score: {train_score:.4f}")
-    print(f"Test R^2 Score: {test_score:.4f}")
-
-    y_pred = regr.predict(X_test)
-
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
-    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal fit')
-    plt.xlabel(f'Actual {target_column}')
-    plt.ylabel(f'Predicted {target_column}')
-    plt.title(f'{title_prefix} Linear Regression: Actual vs Predicted on Test Set')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-def compare_regressors_with_gridsearch(parse_func, target_column: str, title_prefix: str = ""):
-    from sklearn.model_selection import GridSearchCV, train_test_split
-    from sklearn.tree import DecisionTreeRegressor
-    from sklearn.ensemble import AdaBoostRegressor, GradientBoostingRegressor, ExtraTreesRegressor
-    from sklearn.neural_network import MLPRegressor
-    from sklearn.linear_model import Ridge, BayesianRidge, LinearRegression, HuberRegressor
-    from sklearn.cross_decomposition import PLSRegression
-    from sklearn.svm import SVR, LinearSVR, NuSVR
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    models_and_params = [
-        ("AdaBoostRegressor", AdaBoostRegressor(random_state=42), {
-            "n_estimators": [50, 100, 200, 300],
-            "learning_rate": [0.01, 0.05, 0.1, 0.5, 1.0],
-            "loss": ["linear", "square", "exponential"]
-        }),
-        ("GradientBoostingRegressor", GradientBoostingRegressor(random_state=42), {
-            "n_estimators": [50, 100, 200, 300],
-            "learning_rate": [0.01, 0.05, 0.1, 0.2],
-            "max_depth": [2, 3, 4, 6, 8],
-            "subsample": [0.7, 0.85, 1.0],
-            "min_samples_split": [2, 5, 10]
-        }),
-        ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42), {
-            "max_depth": [2, 4, 6, 8, 10, 12, None],
-            "min_samples_split": [2, 5, 10, 20],
-            "min_samples_leaf": [1, 2, 4, 8],
-            "criterion": ["squared_error", "friedman_mse", "absolute_error"]
-        }),
-        ("MLPRegressor", MLPRegressor(max_iter=2000, random_state=42), {
-            "hidden_layer_sizes": [(50,), (100,), (50,50), (100,50), (100,100)],
-            "activation": ["relu", "tanh", "logistic"],
-            "alpha": [0.0001, 0.001, 0.01],
-            "learning_rate": ["constant", "adaptive"]
-        }),
-        ("ExtraTreesRegressor", ExtraTreesRegressor(random_state=42), {
-            "n_estimators": [50, 100, 200, 300],
-            "max_depth": [None, 4, 8, 12],
-            "min_samples_split": [2, 5, 10],
-            "min_samples_leaf": [1, 2, 4]
-        }),
-        ("Ridge", Ridge(), {
-            "alpha": [0.01, 0.1, 1.0, 10.0, 100.0],
-            "solver": ["auto", "svd", "cholesky", "lsqr", "sag"]
-        }),
-        ("BayesianRidge", BayesianRidge(), {
-            "alpha_1": [1e-6, 1e-5, 1e-4, 1e-3],
-            "alpha_2": [1e-6, 1e-5, 1e-4, 1e-3],
-            "lambda_1": [1e-6, 1e-5, 1e-4, 1e-3],
-            "lambda_2": [1e-6, 1e-5, 1e-4, 1e-3]
-        }),
-        ("LinearRegression", LinearRegression(), {}),  # No hyperparameters
-        ("PLSRegression", PLSRegression(), {
-            "n_components": [1, 2, 3, 4, 5]
-        }),
-        ("HuberRegressor", HuberRegressor(), {
-            "epsilon": [1.1, 1.35, 1.5, 1.75, 2.0],
-            "alpha": [0.0001, 0.001, 0.01]
-        }),
-        ("NuSVR", NuSVR(), {
-            "C": [0.1, 1, 10],
-            "nu": [0.25, 0.5, 0.75],
-            "kernel": ["rbf", "linear"]
-        }),
-    ]
-
-    results = []
-    for name, model, params in models_and_params:
-        try:
-            if params:
-                grid = GridSearchCV(model, params, cv=3, scoring='r2', n_jobs=-1)
-                grid.fit(X_train, y_train)
-                best_model = grid.best_estimator_
-                best_params = grid.best_params_
-            else:
-                model.fit(X_train, y_train)
-                best_model = model
-                best_params = {}
-            y_pred = best_model.predict(X_test)
-            r2 = r2_score(y_test, y_pred)
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-            results.append((name, r2, rmse, best_params))
-            print(f"{name}: Test R^2 = {r2:.4f}, RMSE = {rmse:.4f}, Best Params: {best_params}")
-        except Exception as e:
-            print(f"{name}: Failed with error: {e}")
-
-    results.sort(key=lambda x: x[1], reverse=True)
-    print("\n====== Model Ranking by Test R^2 ======")
-    for i, (name, r2, rmse, params) in enumerate(results, 1):
-        print(f"{i}. {name}: R^2 = {r2:.4f}, RMSE = {rmse:.4f}, Best Params: {params}")
-
-    # Plot best model
-    if results:
-        best_name, _, _, best_params = results[0]
-        best_model = dict((n, m) for n, m, _ in models_and_params)[best_name].set_params(**best_params)
-        best_model.fit(X_train, y_train)
-        y_pred = best_model.predict(X_test)
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
-        plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
-        plt.xlabel(f'Actual {target_column}')
-        plt.ylabel(f'Predicted {target_column}')
-        plt.title(f'{title_prefix} {best_name}: Actual vs Predicted')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
-        
-def compare_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 50):
-    from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor, SGDRegressor
-    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor, BaggingRegressor
-    from sklearn.tree import DecisionTreeRegressor
-    from sklearn.svm import SVR, LinearSVR, NuSVR
-    from sklearn.neural_network import MLPRegressor
-    from sklearn.cross_decomposition import PLSRegression
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.neighbors import KNeighborsRegressor, RadiusNeighborsRegressor
-
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-
-    regressors = [
-        ("LinearRegression", LinearRegression()),
-        ("Ridge", Ridge()),
-        ("Lasso", Lasso()),
-        ("ElasticNet", ElasticNet()),
-        ("BayesianRidge", BayesianRidge()),
-        ("HuberRegressor", HuberRegressor()),
-        ("SGDRegressor", SGDRegressor(max_iter=1000, tol=1e-3)),
-        ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42)),
-        ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=42)),
-        ("ExtraTreesRegressor", ExtraTreesRegressor(n_estimators=100, random_state=42)),
-        ("GradientBoostingRegressor", GradientBoostingRegressor(n_estimators=100, random_state=42)),
-        ("AdaBoostRegressor", AdaBoostRegressor(n_estimators=100, random_state=42)),
-        ("BaggingRegressor", BaggingRegressor(n_estimators=100, random_state=42)),
-        ("KNeighborsRegressor", KNeighborsRegressor()),
-        ("NuSVR", NuSVR()),
-        ("RadiusNeighborsRegressor", RadiusNeighborsRegressor()),
-        ("GaussianProcessRegressor", GaussianProcessRegressor()),
-        ("PLSRegression", PLSRegression()),
-        ("LinearSVR", LinearSVR()),
-        ("SVR", SVR()),
-        ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
-    ]
-
-    results = {name: {"r2": [], "rmse": [], "mae": [], "devs": []} for name, _ in regressors}
-
-    for run in range(n_runs):
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=run)
-        for name, regr in regressors:
-            try:
-                regr.fit(X_train, y_train)
-                y_pred = regr.predict(X_test)
-                r2 = r2_score(y_test, y_pred)
-                rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-                mae = np.mean(np.abs(y_test - y_pred))
-                devs = y_test - y_pred
-                results[name]["r2"].append(r2)
-                results[name]["rmse"].append(rmse)
-                results[name]["mae"].append(mae)
-                results[name]["devs"].extend(devs)
-            except Exception:
-                continue
-
-    summary = []
-    for name in results:
-        if len(results[name]["devs"]) == 0:
-            print(f"{name}: No successful runs, skipping statistics.")
-            continue
-        r2_mean = np.mean(results[name]["r2"])
-        rmse_mean = np.mean(results[name]["rmse"])
-        mae_mean = np.mean(results[name]["mae"])
-        devs = np.array(results[name]["devs"])
-        dev_mean = np.mean(devs)
-        dev_std = np.std(devs)
-        dev_max = np.max(devs)
-        dev_min = np.min(devs)
-        summary.append((name, r2_mean, rmse_mean, mae_mean, dev_mean, dev_std, dev_max, dev_min))
-        print(
-            f"{name}: Mean R^2 = {r2_mean:.4f}, Mean RMSE = {rmse_mean:.4f}, "
-            f"Mean MAE = {mae_mean:.4f}, Mean Dev = {dev_mean:.4f}, "
-            f"Std Dev = {dev_std:.4f}, Max Dev = {dev_max:.4f}, Min Dev = {dev_min:.4f}"
-        )
-
-    summary.sort(key=lambda x: x[1], reverse=True)
-    print("\n====== Model Ranking by Mean Test R^2 ======")
-    for i, (name, r2, rmse, mae, dev_mean, dev_std, dev_max, dev_min) in enumerate(summary, 1):
-        print(
-            f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}, "
-            f"Mean MAE = {mae:.4f}, Mean Dev = {dev_mean:.4f}, "
-            f"Std Dev = {dev_std:.4f}, Max Dev = {dev_max:.4f}, Min Dev = {dev_min:.4f}"
-        )
-        
-    names = [x[0] for x in summary]
-    mean_r2 = [x[1] for x in summary]
-    mean_rmse = [x[2] for x in summary]
-
-    fig, ax1 = plt.subplots(figsize=(12, 5))
-    ax1.bar(names, mean_r2, color='skyblue')
-    ax1.set_ylabel('Mean R²')
-    ax1.set_title('Mean R² by Model')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-
-    fig, ax2 = plt.subplots(figsize=(12, 5))
-    ax2.bar(names, mean_rmse, color='salmon')
-    ax2.set_ylabel('Mean RMSE')
-    ax2.set_title('Mean RMSE by Model')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-
-    best_name = summary[0][0]
-    best_regr = dict(regressors)[best_name]
-    best_regr.fit(X_train, y_train)
-    y_pred = best_regr.predict(X_test)
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
-    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
-    plt.xlabel(f'Actual {target_column}')
-    plt.ylabel(f'Predicted {target_column}')
-    plt.title(f'{title_prefix} {best_name}: Actual vs Predicted (Last Run)')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_score, KFold
 
-import numpy as np
-import pandas as pd
 from sklearn.model_selection import GridSearchCV, RepeatedKFold
-from sklearn.ensemble import GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor
+from sklearn.svm import NuSVR
+from sklearn.model_selection import RepeatedKFold, train_test_split
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+from utils.parsers import parse_s_value, parse_tsi_value, parse_p_value, parse_asmix_with_density_find_CII
+from sklearn.model_selection import cross_val_score
+from sklearn.base import clone
 
 def tune_top_regressors(parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 5):
     df = parse_func()
     X = df.drop(columns=[target_column])
     y = df[target_column]
 
-    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=9)
 
     param_grids = {
-        "GradientBoostingRegressor": {
-            "n_estimators": [50, 100, 200],
-            "learning_rate": [0.01, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3],
-            "max_depth": [2, 3, 4, 5],
-            "subsample": [0.7, 0.85, 1.0],
-            "min_samples_split": [2, 5, 10]
-        },
-        "AdaBoostRegressor": {
-            "n_estimators": [50, 100],
-            "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.5, 1.0],
-            "loss": ["linear", "square", "exponential"]
-        },
         "ExtraTreesRegressor": {
             #"n_estimators": [50, 100, 200, 300],
             "n_estimators": [50, 100],
@@ -344,9 +32,7 @@ def tune_top_regressors(parse_func, target_column: str, cv_folds: int = 5, n_rep
     }
 
     regressors = {
-        #"GradientBoostingRegressor": GradientBoostingRegressor(random_state=42),
-        #"AdaBoostRegressor": AdaBoostRegressor(random_state=42),
-        "ExtraTreesRegressor": ExtraTreesRegressor(random_state=42)
+        "ExtraTreesRegressor": ExtraTreesRegressor(random_state=9)
     }
 
     for name in regressors:
@@ -363,22 +49,19 @@ def tune_top_regressors(parse_func, target_column: str, cv_folds: int = 5, n_rep
         print(f"Best R^2: {grid.best_score_:.4f}")
         print(f"Best Params: {grid.best_params_}")
 
-        # Optionally, also print RMSE for best estimator
         from sklearn.model_selection import cross_val_score
         best_model = grid.best_estimator_
         neg_mse = cross_val_score(best_model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
         rmse = np.sqrt(-neg_mse)
         print(f"Best RMSE (mean ± std): {rmse.mean():.4f} ± {rmse.std():.4f}")
 
-
 def compare_regressors_repeated_cv(parse_func, target_column: str, title_prefix: str = "", cv_folds: int = 5, n_repeats: int = 25):
-    from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor, SGDRegressor
+    from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, BayesianRidge, HuberRegressor
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor, BaggingRegressor
     from sklearn.tree import DecisionTreeRegressor
     from sklearn.svm import SVR, LinearSVR, NuSVR
     from sklearn.neural_network import MLPRegressor
     from sklearn.cross_decomposition import PLSRegression
-    from sklearn.gaussian_process import GaussianProcessRegressor
     from sklearn.neighbors import KNeighborsRegressor, RadiusNeighborsRegressor
 
     df = parse_func()
@@ -392,23 +75,22 @@ def compare_regressors_repeated_cv(parse_func, target_column: str, title_prefix:
         ("ElasticNet", ElasticNet()),
         ("BayesianRidge", BayesianRidge()),
         ("HuberRegressor", HuberRegressor()),
-        ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=42)),
-        ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=42)),
-        ("ExtraTreesRegressor", ExtraTreesRegressor(n_estimators=100, random_state=42)),
-        ("GradientBoostingRegressor", GradientBoostingRegressor(n_estimators=100, random_state=42)),
-        ("AdaBoostRegressor", AdaBoostRegressor(n_estimators=100, random_state=42)),
-        ("BaggingRegressor", BaggingRegressor(n_estimators=100, random_state=42)),
+        ("DecisionTreeRegressor", DecisionTreeRegressor(random_state=9)),
+        ("RandomForestRegressor", RandomForestRegressor(n_estimators=100, random_state=9)),
+        ("ExtraTreesRegressor", ExtraTreesRegressor(n_estimators=100, random_state=9)),
+        ("GradientBoostingRegressor", GradientBoostingRegressor(n_estimators=100, random_state=9)),
+        ("AdaBoostRegressor", AdaBoostRegressor(n_estimators=100, random_state=9)),
+        ("BaggingRegressor", BaggingRegressor(n_estimators=100, random_state=9)),
         ("KNeighborsRegressor", KNeighborsRegressor()),
         ("NuSVR", NuSVR()),
         ("RadiusNeighborsRegressor", RadiusNeighborsRegressor()),
-        ("GaussianProcessRegressor", GaussianProcessRegressor()),
         ("PLSRegression", PLSRegression()),
         ("LinearSVR", LinearSVR()),
         ("SVR", SVR()),
-        ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=42)),
+        ("MLPRegressor", MLPRegressor(max_iter=1000, random_state=9)),
     ]
 
-    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=9)
     results = []
 
     for name, regr in regressors:
@@ -446,112 +128,22 @@ def compare_regressors_repeated_cv(parse_func, target_column: str, title_prefix:
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
     plt.show()
-
-def compare_best_regressors(parse_func, target_column: str, title_prefix: str = "", n_runs: int = 40):
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
     
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import r2_score, mean_squared_error
-    from sklearn.ensemble import GradientBoostingRegressor, AdaBoostRegressor
-    from sklearn.linear_model import HuberRegressor, BayesianRidge, LinearRegression, Ridge
-    from sklearn.cross_decomposition import PLSRegression
-    from sklearn.neural_network import MLPRegressor
-    from sklearn.svm import SVR, LinearSVR, NuSVR
-
-    regressors = [
-        ("AdaBoostRegressor", AdaBoostRegressor(
-            learning_rate=1.0, loss='linear', n_estimators=300, random_state=42)),
-        ("MLPRegressor", MLPRegressor(
-            activation='relu', alpha=0.01, hidden_layer_sizes=(100, 100), learning_rate='constant', max_iter=1000, random_state=42)),
-        ("BayesianRidge", BayesianRidge(
-            alpha_1=1e-06, alpha_2=0.001, lambda_1=0.001, lambda_2=1e-06)),
-        ("Ridge", Ridge(
-            alpha=0.01, solver='lsqr')),
-        ("HuberRegressor", HuberRegressor(
-            alpha=0.01, epsilon=1.1)),
-        ("GradientBoostingRegressor", GradientBoostingRegressor(
-            learning_rate=0.2, max_depth=3, min_samples_split=10, n_estimators=50, subsample=1.0, random_state=42)),
-        ("LinearRegression", LinearRegression()),
-        ("PLSRegression", PLSRegression(
-            n_components=4)),
-        ("NuSVR", NuSVR(
-            C=10, kernel='rbf', nu=0.25)),
-    ]
-
-    results = {name: {"r2": [], "rmse": []} for name, _ in regressors}
-
-    for run in range(n_runs):
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=run)
-        for name, regr in regressors:
-            try:
-                regr.fit(X_train, y_train)
-                y_pred = regr.predict(X_test)
-                r2 = r2_score(y_test, y_pred)
-                rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-                results[name]["r2"].append(r2)
-                results[name]["rmse"].append(rmse)
-            except Exception:
-                continue
-
-    summary = []
-    for name in results:
-        r2_mean = np.mean(results[name]["r2"])
-        rmse_mean = np.mean(results[name]["rmse"])
-        summary.append((name, r2_mean, rmse_mean))
-        print(f"{name}: Mean Test R^2 = {r2_mean:.4f}, Mean RMSE = {rmse_mean:.4f}")
-
-    summary.sort(key=lambda x: x[1], reverse=True)
-    print("\n====== Model Ranking by Mean Test R^2 ======")
-    for i, (name, r2, rmse) in enumerate(summary, 1):
-        print(f"{i}. {name}: Mean R^2 = {r2:.4f}, Mean RMSE = {rmse:.4f}")
-
-    best_name = summary[0][0]
-    best_regr = dict(regressors)[best_name]
-    best_regr.fit(X_train, y_train)
-    y_pred = best_regr.predict(X_test)
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
-    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
-    plt.xlabel(f'Actual {target_column}')
-    plt.ylabel(f'Predicted {target_column}')
-    plt.title(f'{title_prefix} {best_name}: Actual vs Predicted (Last Run)')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-    
-from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.model_selection import RepeatedKFold, cross_val_score
-import numpy as np
-
-def repeated_cv_extratrees(parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 10):
+def analyze_repeated_cv_model(model, parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 10):
     df = parse_func()
     X = df.drop(columns=[target_column])
     y = df[target_column]
 
-    model = ExtraTreesRegressor(
-        max_depth=8,
-        min_samples_leaf=1,
-        min_samples_split=2,
-        n_estimators=100,
-        random_state=42
-    )
-
-    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
+    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=9)
 
     r2_scores = cross_val_score(model, X, y, cv=rkf, scoring='r2', n_jobs=-1)
     neg_mse_scores = cross_val_score(model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
     rmse_scores = np.sqrt(-neg_mse_scores)
 
-    print(f"ExtraTreesRegressor (Repeated CV):")
+    print(f"Repeated CV results:")
     print(f"Mean R^2: {np.mean(r2_scores):.4f} ± {np.std(r2_scores):.4f}")
     print(f"Mean RMSE: {np.mean(rmse_scores):.4f} ± {np.std(rmse_scores):.4f}")
 
-    # Plot R^2 scores distribution
     plt.figure(figsize=(8, 4))
     plt.hist(r2_scores, bins=15, color='skyblue', edgecolor='k')
     plt.title('Distribution of R² Scores (Repeated CV)')
@@ -561,7 +153,6 @@ def repeated_cv_extratrees(parse_func, target_column: str, cv_folds: int = 5, n_
     plt.tight_layout()
     plt.show()
 
-    # Plot RMSE scores distribution
     plt.figure(figsize=(8, 4))
     plt.hist(rmse_scores, bins=15, color='salmon', edgecolor='k')
     plt.title('Distribution of RMSE Scores (Repeated CV)')
@@ -571,7 +162,6 @@ def repeated_cv_extratrees(parse_func, target_column: str, cv_folds: int = 5, n_
     plt.tight_layout()
     plt.show()
 
-    # Fit on all data and plot predicted vs actual
     model.fit(X, y)
     y_pred = model.predict(X)
     plt.figure(figsize=(6, 6))
@@ -585,7 +175,6 @@ def repeated_cv_extratrees(parse_func, target_column: str, cv_folds: int = 5, n_
     plt.tight_layout()
     plt.show()
 
-    # Plot error histogram
     errors = y - y_pred
     plt.figure(figsize=(8, 4))
     plt.hist(errors, bins=30, color='purple', alpha=0.7)
@@ -595,338 +184,110 @@ def repeated_cv_extratrees(parse_func, target_column: str, cv_folds: int = 5, n_
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-    
-def repeated_cv_model(model, parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 10):
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
 
-    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
-
-    r2_scores = cross_val_score(model, X, y, cv=rkf, scoring='r2', n_jobs=-1)
-    neg_mse_scores = cross_val_score(model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
-    rmse_scores = np.sqrt(-neg_mse_scores)
-
-    print(f"ExtraTreesRegressor (Repeated CV):")
-    print(f"Mean R^2: {np.mean(r2_scores):.4f} ± {np.std(r2_scores):.4f}")
-    print(f"Mean RMSE: {np.mean(rmse_scores):.4f} ± {np.std(rmse_scores):.4f}")
-
-    # Plot R^2 scores distribution
-    plt.figure(figsize=(8, 4))
-    plt.hist(r2_scores, bins=15, color='skyblue', edgecolor='k')
-    plt.title('Distribution of R² Scores (Repeated CV)')
-    plt.xlabel('R² Score')
-    plt.ylabel('Frequency')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-    # Plot RMSE scores distribution
-    plt.figure(figsize=(8, 4))
-    plt.hist(rmse_scores, bins=15, color='salmon', edgecolor='k')
-    plt.title('Distribution of RMSE Scores (Repeated CV)')
-    plt.xlabel('RMSE')
-    plt.ylabel('Frequency')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-    # Fit on all data and plot predicted vs actual
-    model.fit(X, y)
-    y_pred = model.predict(X)
-    plt.figure(figsize=(6, 6))
-    plt.scatter(y, y_pred, alpha=0.6, color='blue', label='Predicted vs Actual')
-    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
-    plt.xlabel('Actual')
-    plt.ylabel('Predicted')
-    plt.title('ExtraTreesRegressor: Actual vs Predicted (All Data)')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-    # Plot error histogram
-    errors = y - y_pred
-    plt.figure(figsize=(8, 4))
-    plt.hist(errors, bins=30, color='purple', alpha=0.7)
-    plt.xlabel('Prediction Error (y_true - y_pred)')
-    plt.ylabel('Frequency')
-    plt.title('Prediction Error Histogram (All Data)')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-    
-from sklearn.model_selection import GridSearchCV, RepeatedKFold
-from sklearn.svm import NuSVR, SVR
-from sklearn.ensemble import GradientBoostingRegressor, ExtraTreesRegressor, RandomForestRegressor
-import numpy as np
-
-def quick_hyperparam_search(parse_func, target_column: str, cv_folds: int = 5, n_repeats: int = 3):
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-
-    rkf = RepeatedKFold(n_splits=cv_folds, n_repeats=n_repeats, random_state=42)
-
-    param_grids = {
-        "NuSVR": {
-            "C": [1, 10],
-            "nu": [0.25, 0.5],
-            "kernel": ["rbf", "linear"]
-        },
-        "SVR": {
-            "C": [1, 10],
-            "kernel": ["rbf", "linear"]
-        },
-        "GradientBoostingRegressor": {
-            "n_estimators": [50, 100],
-            "learning_rate": [0.05, 0.1, 0.2],
-            "max_depth": [2, 3]
-        },
-        "ExtraTreesRegressor": {
-            "n_estimators": [50, 100],
-            "max_depth": [None, 4, 8]
-        },
-        "RandomForestRegressor": {
-            "n_estimators": [50, 100],
-            "max_depth": [None, 4, 8]
-        }
-    }
-
-    regressors = {
-        "NuSVR": NuSVR(),
-        "SVR": SVR(),
-        "GradientBoostingRegressor": GradientBoostingRegressor(random_state=42),
-        "ExtraTreesRegressor": ExtraTreesRegressor(random_state=42),
-        "RandomForestRegressor": RandomForestRegressor(random_state=42)
-    }
-
-    for name in regressors:
-        print(f"\nTuning {name}...")
-        grid = GridSearchCV(
-            regressors[name],
-            param_grids[name],
-            scoring='r2',
-            cv=rkf,
-            n_jobs=-1,
-            verbose=1
-        )
-        grid.fit(X, y)
-        print(f"Best R^2: {grid.best_score_:.4f}")
-        print(f"Best Params: {grid.best_params_}")
-
-        # Optionally, also print RMSE for best estimator
-        from sklearn.model_selection import cross_val_score
-        best_model = grid.best_estimator_
-        neg_mse = cross_val_score(best_model, X, y, cv=rkf, scoring='neg_mean_squared_error', n_jobs=-1)
-        rmse = np.sqrt(-neg_mse)
-        print(f"Best RMSE (mean ± std): {rmse.mean():.4f} ± {rmse.std():.4f}")    
-
-def train_and_export(model, parse_func, target_column: str, name: str = "model.pkl"):
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-
-    model.fit(X, y)
-    model_path = os.join("models", name)
-    joblib.dump(model, model_path)
-    print(f"Model exported to {model_path}")
-
-def export_ensemble_nusvr(parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-
-    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=42)
-    ensemble = []
-    for i, (train_idx, _) in enumerate(rkf.split(X)):
-        if i >= n_models:
-            break
-        model = NuSVR(C=1, kernel='rbf', nu=0.5)
-        model.fit(X.iloc[train_idx], y.iloc[train_idx])
-        ensemble.append(model)
-    path = os.path.join("models", name)
-    joblib.dump(ensemble, path)
-    print(f"Ensemble of {n_models} NuSVR models exported to {path}")
-    
-def export_ensemble_tree(parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
-    df = parse_func()
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-    from sklearn.ensemble import ExtraTreesRegressor
-
-    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=42)
-    ensemble = []
-    for i, (train_idx, _) in enumerate(rkf.split(X)):
-        if i >= n_models:
-            break
-        """
-        model = ExtraTreesRegressor( this for TSI
-            max_depth=8,
-            min_samples_leaf=1,
-            min_samples_split=5,
-            n_estimators=50
-        )"""
-        model = ExtraTreesRegressor(
-            max_depth=8,
-            min_samples_leaf=1,
-            min_samples_split=2,
-            n_estimators=100
-        )
-        model.fit(X.iloc[train_idx], y.iloc[train_idx])
-        ensemble.append(model)
-    path = os.path.join("models", name)
-    joblib.dump(ensemble, path)
-    print(f"Ensemble of {n_models} NuSVR models exported to {path}")
-
-def p_value_linear_regression_train():
-    #linear_regression_train(parse_p_value, 'P_Value_res', 'P')
-    #compare_regressors(parse_p_value, 'P_Value_res', 'P')
-    #compare_regressors_repeated_cv(parse_p_value, 'P_Value_res', 'P', cv_folds=5, n_repeats=60)
-    #repeated_cv_extratrees(parse_p_value, 'P_Value_res', cv_folds=5, n_repeats=60) #! its a good model
-    #tune_top_regressors(parse_p_value, 'P_Value_res', cv_folds=5, n_repeats=30)
-    #compare_regressors_with_gridsearch(parse_p_value, 'P_Value_res', 'P')
-    export_ensemble_tree(parse_tsi_value, 'TSI_Value_res', n_models=5, name='p_value_ensemble.pkl')
-
-def tsi_value_linear_regression_train():
-    #compare_regressors(parse_tsi_value, 'TSI_Value_res', 'TSI')
-    #tune_top_regressors(parse_tsi_value, 'TSI_Value_res', cv_folds=5, n_repeats=40)
-    compare_regressors_repeated_cv(parse_tsi_value, 'TSI_Value_res', 'TSI', cv_folds=5, n_repeats=60)
-    #linear_regression_train(parse_tsi_value, 'TSI_Value_res', 'TSI')
-    #export_ensemble_tree(parse_tsi_value, 'TSI_Value_res', n_models=5, name='tsi_value_ensemble.pkl')
-    
-def what():
-    import joblib
-    df = pd.read_csv(f"./data/data_extended_stability.csv")
-    ensemble = joblib.load("models/asmix_nusvr_ensemble.pkl")
-
-    print(df)
-    sample1 = df[df['Sample ID'] == 'RO']
-    sample2 = df[df['Sample ID'] == 'EF']
-
-    sample1 = sample1.drop(columns=['Sample ID', 'Stability Classification', 'CII'])
-    sample1 = sample1 * 0.90 / 100
-
-    sample2 = sample2.drop(columns=['Sample ID', 'Stability Classification', 'CII'])
-    sample2 = sample2 * 0.10 / 100
-
-    sample1 = sample1[['Density', 'As', 'S', 'R', 'Ar']]
-    sample2 = sample2[['Density', 'As', 'S', 'R', 'Ar']]
-    
-    print(sample1)
-    print(sample2)
-
-    X = pd.concat([sample1.reset_index(drop=True), sample2.reset_index(drop=True)], axis=1)
-
-    features = [
-        'D1_scaled', 'As1_scaled', 'S1_scaled', 'R1_scaled', 'Ar1_scaled',
-        'D2_scaled', 'As2_scaled', 'S2_scaled', 'R2_scaled', 'Ar2_scaled',
-    ]
-    X.columns = features
-    print(X)
-
-    print("================ CII PREDICTION ================")
-    print(X)
-
-    preds = np.mean([model.predict(X) for model in ensemble], axis=0)
-    print("Predicted CII:", preds)
-    
-def print_actual_vs_predicted(parse_func, target_column: str, model_path: str = "models/nusvr_ensemble.pkl"):
+def analyze_tree_ensemble(model, parse_func, target_column: str = 'TSI_Value_res', title_prefix: str = "TSI", n_models: int = 10, radius: float = 1.0):
     df = parse_func()
     X = df.drop(columns=[target_column])
     y = df[target_column].reset_index(drop=True)
 
-    ensemble = joblib.load(model_path)
-    preds = np.mean([model.predict(X) for model in ensemble], axis=0)
+    preds = np.zeros((n_models, len(y)))
+    r2_list = []
+    rmse_list = []
 
-    results_df = pd.DataFrame({
-        'Actual': y,
-        'Predicted': preds
-    })
-    print(results_df)    
+    for i in range(n_models):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=i)
+        fill_value = y_train.mean()
+        model.fit(X_train, y_train)
+        preds[i] = model.predict(X)
+        y_pred_test = model.predict(X_test)
+        y_pred_test = np.where(np.isnan(y_pred_test), fill_value, y_pred_test)
+        r2_list.append(r2_score(y_test, y_pred_test))
+        rmse_list.append(np.sqrt(mean_squared_error(y_test, y_pred_test)))
+
+    ensemble_pred = preds.mean(axis=0)
+    ensemble_pred = np.where(np.isnan(ensemble_pred), y.mean(), ensemble_pred)
+    r2_ensemble = r2_score(y, ensemble_pred)
+    rmse_ensemble = np.sqrt(mean_squared_error(y, ensemble_pred))
+
+    print(f"Ensemble R^2 (all data): {r2_ensemble:.4f}")
+    print(f"Ensemble RMSE (all data): {rmse_ensemble:.4f}")
+    print(f"Mean single-model R^2: {np.mean(r2_list):.4f} ± {np.std(r2_list):.4f}")
+    print(f"Mean single-model RMSE: {np.mean(rmse_list):.4f} ± {np.std(rmse_list):.4f}")
+
+    plt.figure(figsize=(6, 6))
+    plt.scatter(y, ensemble_pred, alpha=0.6, color='blue', label='Ensemble Predicted vs Actual')
+    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal Fit')
+    plt.xlabel('Actual TSI')
+    plt.ylabel('Ensemble Predicted TSI')
+    plt.title(f'{title_prefix} RadiusNeighborsRegressor Ensemble: Actual vs Predicted')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    errors = y - ensemble_pred
+    plt.figure(figsize=(8, 4))
+    plt.hist(errors, bins=30, color='purple', alpha=0.7)
+    plt.xlabel('Prediction Error (y_true - y_pred)')
+    plt.ylabel('Frequency')
+    plt.title(f'{title_prefix} RadiusNeighborsRegressor Ensemble: Prediction Error Histogram')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
     
-def test_nusvr_ensemble(parse_func, target_column: str, model_path: str = "models/asmix_nusvr_ensemble.pkl"):
+def export_ensemble_model(model, parse_func, target_column: str, n_models: int = 5, name: str = "model.pkl"):
     df = parse_func()
     X = df.drop(columns=[target_column])
     y = df[target_column]
 
-    ensemble = joblib.load(model_path)
-    preds = np.mean([model.predict(X) for model in ensemble], axis=0)
+    rkf = RepeatedKFold(n_splits=5, n_repeats=n_models, random_state=9)
+    ensemble = []
+    for i, (train_idx, _) in enumerate(rkf.split(X)):
+        if i >= n_models:
+            break
+        model_copy = clone(model)
+        model_copy.fit(X.iloc[train_idx], y.iloc[train_idx])
+        ensemble.append(model_copy)
+    path = os.path.join("models", name)
+    joblib.dump(ensemble, path)
+    print(f"Ensemble of {n_models} {type(model).__name__} models exported to {path}")
 
-    r2 = r2_score(y, preds)
-    rmse = np.sqrt(mean_squared_error(y, preds))
-    print(f"Ensemble NuSVR R^2: {r2:.4f}")
-    print(f"Ensemble NuSVR RMSE: {rmse:.4f}")
-    print_actual_vs_predicted(parse_func, target_column, model_path)
+def p_value_linear_regression_train():
+    model = ExtraTreesRegressor(
+        max_depth=8,
+        min_samples_leaf=1,
+        min_samples_split=5,
+        n_estimators=200
+    )
+    #compare_regressors_repeated_cv(parse_p_value, 'P_Value_res', 'P', cv_folds=5, n_repeats=60)
+    #export_ensemble_model(model, parse_p_value, 'P_Value_res', n_models=10, name='p_value_ensemble7.pkl')
+    analyze_tree_ensemble(model, parse_p_value, target_column='P_Value_res', title_prefix='P', n_models=10)
+
+def tsi_value_linear_regression_train():
+    model = ExtraTreesRegressor(
+        max_depth=8,
+        min_samples_leaf=1,
+        min_samples_split=2,
+        n_estimators=100
+    )
+    #compare_regressors_repeated_cv(parse_tsi_value, 'TSI_Value_res', 'TSI', cv_folds=5, n_repeats=60)
+    #export_ensemble_model(model, parse_tsi_value, 'TSI_Value_res', n_models=10, name='tsi_value_ensemble7.pkl')
+    analyze_tree_ensemble(model, parse_tsi_value, target_column='TSI_Value_res', title_prefix='TSI', n_models=10)
 
 def asmix_linear_regression_train():
-    from utils.parsers import parse_asmix, parse_asmix_with_density, parse_asmix_with_density_find_CII
-    target = 'CII'
+    model = NuSVR(C=1, kernel='rbf', nu=0.5)
     
-    #what()
-    #test_nusvr_ensemble(parse_asmix_with_density_find_CII, target, model_path='models/asmix_nusvr_ensemble.pkl')
-    #export_ensemble_nusvr(parse_asmix_with_density_find_CII, target, n_models=5, export_path='models/asmix_nusvr_ensemble.pkl')
-    #from sklearn.svm import NuSVR
-    #model = NuSVR(C=1, kernel='rbf', nu=0.5)
-    #train_and_export(model, parse_asmix_with_density_find_CII, target, name='mix_findcii_model.pkl')
-    #compare_regressors(parse_asmix_with_density, target, target)
-    #compare_regressors(parse_asmix_with_density_find_CII, target, target)
-    #compare_regressors_with_gridsearch(parse_asmix_with_density_find_CII, target, target)
-    #compare_best_regressors(parse_asmix_with_density_find_CII, target, target)
-    compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, target, target, cv_folds=5, n_repeats=60)
-    #quick_hyperparam_search(parse_asmix_with_density_find_CII, target, 5, 25)
-    #repeated_cv_model(model, parse_asmix_with_density_find_CII, target, cv_folds=5, n_repeats=20)
-    #compare_regressors_with_gridsearch(parse_asmix_with_density, target, target)
-    #compare_best_regressors(parse_asmix_with_density, target, target)
+    #compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, 'CII', 'CII', cv_folds=5, n_repeats=60)
+    export_ensemble_model(model, parse_asmix_with_density_find_CII, 'CII', n_models=5, name='asmix_nusvr_ensemble.pkl')
+    compare_regressors_repeated_cv(parse_asmix_with_density_find_CII, 'CII', 'CII', cv_folds=5, n_repeats=60)
 
 def s_value_linear_regression_train():
-    #compare_regressors_with_gridsearch(parse_s_value, 'S_Value_res', 'S')
-    #compare_regressors(parse_s_value, 'S_Value_res', 'S')
-    #compare_regressors_repeated_cv(parse_s_value, 'S_Value_res', 'S', cv_folds=5, n_repeats=60)
-    #tune_top_regressors(parse_s_value, 'S_Value_res', cv_folds=5, n_repeats=60)
-    repeated_cv_extratrees(parse_s_value, 'S_Value_res', cv_folds=5, n_repeats=60) #! use this ig
-    #export_ensemble_tree(parse_s_value, 'S_Value_res', n_models=5, name='s_value_ensemble.pkl')
-    df = parse_s_value()
-    print(df.head())
-    X = df.drop(columns=['S_Value_res'])
-    y = df['S_Value_res']
-
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(
-        X.iloc[:, 0],  # First feature (X-axis)
-        X.iloc[:, 1],  # Second feature (Y-axis)
-        y,  # Target (Z-axis)
-        c='green', marker='o'
+    model = ExtraTreesRegressor(
+        max_depth=8,
+        min_samples_leaf=1,
+        min_samples_split=5,
+        n_estimators=200
     )
-    ax.set_xlabel(X.columns[0])
-    ax.set_ylabel(X.columns[1])
-    ax.set_zlabel('S_Value_res')
-    ax.set_title('3D Scatter Plot: Feature1 vs Feature2 vs Target')
-    plt.tight_layout()
-    plt.show()
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    regr = LinearRegression()
-    regr.fit(X_train, y_train)
-#    joblib.dump(regr, os.path.join('..', 'models', 's_value_linear_regression.pkl' ))
-    train_score = regr.score(X_train, y_train)
-    test_score = regr.score(X_test, y_test)
-    print(f"Train R^2 Score: {train_score:.4f}")
-    print(f"Test R^2 Score: {test_score:.4f}")
-
-    # Predict on test set
-    y_pred = regr.predict(X_test)
-
-    # Plot actual vs predicted
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
-    plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Ideal fit')
-    plt.xlabel('Actual S_Value_res')
-    plt.ylabel('Predicted S_Value_res')
-    plt.title('Linear Regression: Actual vs Predicted on Test Set')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
+    #compare_regressors_repeated_cv(parse_s_value, 'S_Value_res', 'S', cv_folds=5, n_repeats=60)
+    #export_ensemble_model(model, parse_s_value, 'S_Value_res', n_models=1, name='s_value_ensemble_invar.pkl')
+    analyze_tree_ensemble(model, parse_s_value, target_column='S_Value_res', title_prefix='S', n_models=1)
