@@ -21,50 +21,14 @@ def show_main_screen():
     state.featureset = False
     state.root.grid_rowconfigure(0, weight=1)
     state.root.grid_rowconfigure(1, weight=1)
-    state.root.grid_rowconfigure(2, weight=1)
     state.root.grid_columnconfigure(0, weight=1)
     state.root.grid_columnconfigure(1, weight=0)
 
-    tk.Button(state.root, text="Model ranking", width=20, command=show_ranking_screen).grid(
-        row=0, column=0, pady=50, padx=100, sticky="nsew"
-    )
     tk.Button(state.root, text="Samples mixing from dataset", width=20, command=show_sample_selection).grid(
-        row=1, column=0, pady=50, padx=100, sticky="nsew"
+        row=0, column=0, pady=70, padx=100, sticky="nsew"
     )
     tk.Button(state.root, text="Samples mixing with own data", width=20, command=show_sample_input).grid(
-        row=2, column=0, pady=50, padx=100, sticky="nsew"
-    )
-
-def show_ranking_screen():
-    clear_window(state.root)
-    state.root.title("Oil Classifier Ranking")
-
-    for i in range(6):
-        state.root.grid_rowconfigure(i, weight=1)
-    state.root.grid_columnconfigure(0, weight=1)
-    state.root.grid_columnconfigure(1, weight=1)
-
-    tk.Label(state.root, text="Welcome to the Oil Classifier", font=("Helvetica", 16)).grid(
-        row=0, column=0, columnspan=2, pady=20, sticky="n"
-    )
-
-    tk.Button(state.root, text="Select Dataset", width=20, command=select_dataset).grid(
-        row=1, column=0, columnspan=2, pady=15, padx=60, sticky="nsew"
-    )
-    tk.Button(state.root, text="Select Graphs Options", width=20, command=select_graphs).grid(
-        row=2, column=0, columnspan=2, pady=15, padx=60,sticky="nsew"
-    )
-    tk.Button(state.root, text="Select featureset", width=20, command=select_featureset).grid(
-        row=3, column=0, columnspan=2, pady=15, padx=60,sticky="nsew"
-    )
-    tk.Button(state.root, text="Select model", width=20, command=select_model_if_ready).grid(
-        row=4, column=0, columnspan=2, pady=15, padx=60, sticky="nsew"
-    )
-    tk.Button(state.root, text="Back", width=20, command=show_main_screen).grid(
-        row=5, column=0, pady=25, padx=60,sticky="nsew"
-    )
-    tk.Button(state.root, text="Next", width=20, command=go_next_ranking).grid(
-        row=5, column=1, pady=25, padx=60,sticky="nsew"
+        row=1, column=0, pady=70, padx=100, sticky="nsew"
     )
 
 def show_sample_selection():
