@@ -43,19 +43,23 @@ class Mix:
         self.mix_type = reverse_label_mapping[self.mix_type]
 
     def predict_mix_type(self):
-        density_1 = self.sample1['Density'].dropna().iloc[0]
-        density_2 = self.sample2['Density'].dropna().iloc[0]
-        mix_density = (self.v1 * density_1 + self.v2 * density_2)/100
-        features = pd.DataFrame([{
-            'Density': mix_density,
-            'CII': self.CII,
-        }])
+        try:
+            density_1 = self.sample1['Density'].dropna().iloc[0]
+            density_2 = self.sample2['Density'].dropna().iloc[0]
+            mix_density = (self.v1 * density_1 + self.v2 * density_2)/100
+            features = pd.DataFrame([{
+                'Density': mix_density,
+                'CII': self.CII,
+            }])
 
-        model = joblib.load(resource_path('models/mlp_density_cii.pkl'))
+            model = joblib.load(resource_path('models/mlp_density_cii.pkl'))
 
-        predicted_type = model.predict(features)[0]
+            predicted_type = model.predict(features)[0]
 
-        return predicted_type
+            return predicted_type
+        except Exception as e:
+            print(f"Error predicting mix type for IDs {self.id1} and {self.id2}: {e}")
+            return "-"
 
     def predict_stability(self):
         if self.mix_type == 'light':
@@ -103,8 +107,8 @@ class Mix:
             ensemble = joblib.load(resource_path("models/asmix_nusvr_ensemble.pkl"))
 
 
-            sample1 = self.sample1[['Density', 'As', 'S', 'R', 'Ar']]
-            sample2 = self.sample2[['Density', 'As', 'S', 'R', 'Ar']]
+            sample1 = self.sample1[['Density', 'As', 'S', 'R', 'Ar']].iloc[[0]]
+            sample2 = self.sample2[['Density', 'As', 'S', 'R', 'Ar']].iloc[[0]]
 
             sample1 = sample1 * self.v1 / 10000
             sample2 = sample2 * self.v2 / 10000

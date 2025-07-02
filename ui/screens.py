@@ -1,8 +1,10 @@
 import tkinter as tk
+import numpy as np
+import pandas as pd
 from tkinter import ttk
 from tkinter import messagebox
 from ui.dialogs import select_dataset, select_graphs, show_loading, select_featureset, get_best_model_for_featureset, show_ranking_dialog
-from ui.utils import clear_window, load_sample_ids, get_text_color
+from ui.utils import clear_window, load_sample_ids, get_text_color, resource_path
 import ui.state as state
 from ui.Mix import Mix
 import time
@@ -81,8 +83,11 @@ def show_sample_selection():
         s1, s2 = sample1.get(), sample2.get()
         v1, v2 = value1.get(), value2.get()
 
-        if not s1 or not s2:
-            messagebox.showwarning("Missing samples", "Please select both samples.")
+        df = pd.read_csv(resource_path(f"data/{state.prediction_dataset}"))
+        sample_ids = set(df['Sample ID'])
+
+        if s1 not in sample_ids or s2 not in sample_ids:
+            messagebox.showerror("Invalid Sample", "One or both selected samples are not in the database.")
             return
 
         loading = show_loading(state.root)
@@ -171,10 +176,27 @@ def show_sample_input():
 
     tk.Button(state.root, text="Back", width=15, command=lambda: show_main_screen()).grid(row=4, column=0, sticky="sw", pady=30, padx=50)
     tk.Button(state.root, text="Confirm", width=15, command=lambda: confirm()).grid(row=4, column=0, sticky="se", pady=30, padx=50)
+
     def confirm():
+        required = ["Density", "S", "Ar", "As", "R"]
+        for key in required:
+            if not sample1_entries[key].get().strip():
+                messagebox.showerror("Missing Input", f"Sample 1: '{key}' is required.")
+                return
+        for key in required:
+            if not sample2_entries[key].get().strip():
+                messagebox.showerror("Missing Input", f"Sample 2: '{key}' is required.")
+                return
         try:
-            sample1 = {key: float(entry.get()) for key, entry in sample1_entries.items()}
-            sample2 = {key: float(entry.get()) for key, entry in sample2_entries.items()}
+            sample1 = {}
+            for key, entry in sample1_entries.items():
+                val = entry.get().strip()
+                sample1[key] = float(val) if val else np.nan
+
+            sample2 = {}
+            for key, entry in sample2_entries.items():
+                val = entry.get().strip()
+                sample2[key] = float(val) if val else np.nan
         except ValueError:
             messagebox.showerror("Invalid Input", "Please enter valid numeric values for all fields.")
             return
